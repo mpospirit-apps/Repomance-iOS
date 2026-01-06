@@ -46,7 +46,24 @@ struct Repository: Identifiable, Sendable {
         self.repoUpdateDate = apiRepo.repo_update_date
         self.category = apiRepo.category
     }
-    
+
+    // Initialize from EnrichedTrendingRepo (for trending section)
+    init(from trending: EnrichedTrendingRepo) {
+        self.id = trending.githubId  // CRITICAL: Use GitHub ID for interaction tracking
+        self.name = trending.trending.name
+        self.owner = trending.trending.author
+        self.description = trending.trending.description
+        self.stargazersCount = trending.trending.stars
+        self.forkCount = trending.trending.forks
+        self.watcherCount = 0  // Not available from trending API
+        self.language = trending.trending.language
+        self.htmlUrl = trending.trending.url
+        self.topics = []  // Not available from trending API
+        self.license = nil  // Not available from trending API
+        self.repoUpdateDate = nil  // Not available from trending API
+        self.category = nil  // Trending repos don't have categories
+    }
+
 }
 
 extension Repository: Codable {

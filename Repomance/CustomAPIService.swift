@@ -832,4 +832,238 @@ class CustomAPIService: ObservableObject {
             }
         }.resume()
     }
+
+    // MARK: - Trending Repos Methods
+
+    func fetchTrendingRepositories(
+        language: String? = nil,
+        since: TrendingPeriod = .daily,
+        completion: @escaping @Sendable ([GitHubTrendingRepository]?) -> Void
+    ) {
+        var components = URLComponents(string: "https://ghapi.huchen.dev/repositories")!
+        var queryItems: [URLQueryItem] = []
+
+        if let language = language {
+            queryItems.append(URLQueryItem(name: "language", value: language))
+        }
+
+        queryItems.append(URLQueryItem(name: "since", value: since.rawValue))
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            Task.detached {
+                do {
+                    let repos = try self.decode(type: [GitHubTrendingRepository].self, from: data)
+                    await MainActor.run {
+                        completion(repos)
+                    }
+                } catch {
+                    await MainActor.run {
+                        completion(nil)
+                    }
+                }
+            }
+        }.resume()
+    }
+
+    func fetchGitHubRepoDetails(
+        owner: String,
+        repo: String,
+        token: String,
+        completion: @escaping @Sendable (Int?) -> Void
+    ) {
+        let urlString = "https://api.github.com/repos/\(owner)/\(repo)"
+        guard let url = URL(string: urlString) else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            Task.detached {
+                do {
+                    let repoDetails = try self.decode(type: GitHubRepoDetails.self, from: data)
+                    await MainActor.run {
+                        completion(repoDetails.id)
+                    }
+                } catch {
+                    await MainActor.run {
+                        completion(nil)
+                    }
+                }
+            }
+        }.resume()
+    }
+
+    func fetchUserInteractions(
+        username: String,
+        completion: @escaping @Sendable ([Int]) -> Void
+    ) {
+        // Fetch all interactions for the user to filter trending repos
+        let urlString = "\(baseURL)users/interactions/?username=\(username)"
+        guard let url = URL(string: urlString) else {
+            completion([])
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion([])
+                }
+                return
+            }
+
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion([])
+                }
+                return
+            }
+
+            Task.detached {
+                do {
+                    let interactions = try self.decode(type: [UserInteractionsResponse].self, from: data)
+                    let githubIds = interactions.map { $0.repository }
+                    await MainActor.run {
+                        completion(githubIds)
+                    }
+                } catch {
+                    await MainActor.run {
+                        completion([])
+                    }
+                }
+            }
+        }.resume()
+    }
+
+    func fetchGitHubReadme(
+        owner: String,
+        repo: String,
+        token: String,
+        completion: @escaping @Sendable (String?) -> Void
+    ) {
+        let urlString = "https://api.github.com/repos/\(owner)/\(repo)/readme"
+        guard let url = URL(string: urlString) else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 404 {
+                    // README not found
+                    DispatchQueue.main.async {
+                        completion(nil)
+                    }
+                    return
+                }
+            }
+
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            Task.detached {
+                do {
+                    // Parse the response to get base64 content
+                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let content = json["content"] as? String,
+                       let encoding = json["encoding"] as? String,
+                       encoding == "base64" {
+
+                        // Remove newlines from base64 string before decoding
+                        let cleanBase64 = content.replacingOccurrences(of: "\n", with: "")
+
+                        // Decode base64 content
+                        if let decodedData = Data(base64Encoded: cleanBase64),
+                           let decodedString = String(data: decodedData, encoding: .utf8) {
+                            await MainActor.run {
+                                completion(decodedString)
+                            }
+                        } else {
+                            await MainActor.run {
+                                completion(nil)
+                            }
+                        }
+                    } else {
+                        await MainActor.run {
+                            completion(nil)
+                        }
+                    }
+                } catch {
+                    await MainActor.run {
+                        completion(nil)
+                    }
+                }
+            }
+        }.resume()
+    }
+}
+
+// MARK: - Trending Period Enum
+
+enum TrendingPeriod: String, Codable, Sendable {
+    case daily
+    case weekly
+    case monthly
 }
