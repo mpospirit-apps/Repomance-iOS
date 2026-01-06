@@ -838,48 +838,106 @@ class CustomAPIService: ObservableObject {
     func fetchTrendingRepositories(
         language: String? = nil,
         since: TrendingPeriod = .daily,
+        token: String,
         completion: @escaping @Sendable ([GitHubTrendingRepository]?) -> Void
     ) {
-        var components = URLComponents(string: "https://ghapi.huchen.dev/repositories")!
-        var queryItems: [URLQueryItem] = []
+        print("🌐 [CustomAPIService] Fetching trending repos - language: \(language ?? "nil"), since: \(since.rawValue)")
 
-        if let language = language {
-            queryItems.append(URLQueryItem(name: "language", value: language))
-        }
-
-        queryItems.append(URLQueryItem(name: "since", value: since.rawValue))
-        components.queryItems = queryItems
-
-        guard let url = components.url else {
+        // Calculate date for the search query
+        let calendar = Calendar.current
+        let daysAgo = since.daysAgo
+        guard let fromDate = calendar.date(byAdding: .day, value: -daysAgo, to: Date()) else {
+            print("❌ [CustomAPIService] Failed to calculate date")
             completion(nil)
             return
         }
 
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: fromDate)
+
+        // Build search query: created:>DATE [language:LANG]
+        var query = "created:>\(dateString)"
+        if let language = language {
+            query += " language:\(language)"
+        }
+
+        print("🔍 [CustomAPIService] Search query: \(query)")
+
+        var components = URLComponents(string: "https://api.github.com/search/repositories")!
+        components.queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "sort", value: "stars"),
+            URLQueryItem(name: "order", value: "desc"),
+            URLQueryItem(name: "per_page", value: "30")
+        ]
+
+        guard let url = components.url else {
+            print("❌ [CustomAPIService] Invalid URL for trending repos")
+            completion(nil)
+            return
+        }
+
+        print("🌐 [CustomAPIService] Request URL: \(url.absoluteString)")
+
         var request = URLRequest(url: url)
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [CustomAPIService] Network error fetching trending: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
                 return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] GitHub Search API response status: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("⚠️ [CustomAPIService] Non-200 status code: \(httpResponse.statusCode)")
+                }
             }
 
             guard let data = data else {
+                print("❌ [CustomAPIService] No data received from GitHub Search API")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
                 return
             }
 
+            print("📦 [CustomAPIService] Received \(data.count) bytes from GitHub Search API")
+
             Task.detached {
                 do {
-                    let repos = try self.decode(type: [GitHubTrendingRepository].self, from: data)
+                    let searchResponse = try self.decode(type: GitHubSearchResponse.self, from: data)
+                    print("✅ [CustomAPIService] Successfully decoded \(searchResponse.items.count) search results")
+
+                    // Map search results to GitHubTrendingRepository
+                    let trendingRepos = searchResponse.items.map { item in
+                        GitHubTrendingRepository(
+                            author: item.owner.login,
+                            name: item.name,
+                            url: item.html_url,
+                            description: item.description,
+                            language: item.language,
+                            languageColor: nil,  // Not available from search API
+                            stars: item.stargazers_count,
+                            forks: item.forks_count,
+                            currentPeriodStars: 0,  // Not available from search API
+                            builtBy: nil,  // Not available from search API
+                            githubId: item.id  // GitHub ID from search API
+                        )
+                    }
+
+                    print("✅ [CustomAPIService] Mapped to \(trendingRepos.count) trending repos")
                     await MainActor.run {
-                        completion(repos)
+                        completion(trendingRepos)
                     }
                 } catch {
+                    print("❌ [CustomAPIService] Failed to decode search results: \(error)")
                     await MainActor.run {
                         completion(nil)
                     }
@@ -895,7 +953,10 @@ class CustomAPIService: ObservableObject {
         completion: @escaping @Sendable (Int?) -> Void
     ) {
         let urlString = "https://api.github.com/repos/\(owner)/\(repo)"
+        print("🔍 [CustomAPIService] Fetching GitHub repo details for \(owner)/\(repo)")
+        
         guard let url = URL(string: urlString) else {
+            print("❌ [CustomAPIService] Invalid URL for repo details: \(urlString)")
             completion(nil)
             return
         }
@@ -906,13 +967,22 @@ class CustomAPIService: ObservableObject {
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [CustomAPIService] Network error fetching repo details for \(owner)/\(repo): \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
                 return
             }
 
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] GitHub API response for \(owner)/\(repo): \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("⚠️ [CustomAPIService] Non-200 status code for \(owner)/\(repo)")
+                }
+            }
+            
             guard let data = data else {
+                print("❌ [CustomAPIService] No data received for \(owner)/\(repo)")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
@@ -922,10 +992,12 @@ class CustomAPIService: ObservableObject {
             Task.detached {
                 do {
                     let repoDetails = try self.decode(type: GitHubRepoDetails.self, from: data)
+                    print("✅ [CustomAPIService] Got GitHub ID \(repoDetails.id) for \(owner)/\(repo)")
                     await MainActor.run {
                         completion(repoDetails.id)
                     }
                 } catch {
+                    print("❌ [CustomAPIService] Failed to decode repo details for \(owner)/\(repo): \(error)")
                     await MainActor.run {
                         completion(nil)
                     }
@@ -940,7 +1012,11 @@ class CustomAPIService: ObservableObject {
     ) {
         // Fetch all interactions for the user to filter trending repos
         let urlString = "\(baseURL)users/interactions/?username=\(username)"
+        print("🔍 [CustomAPIService] Fetching user interactions for: \(username)")
+        print("🌐 [CustomAPIService] Request URL: \(urlString)")
+        
         guard let url = URL(string: urlString) else {
+            print("❌ [CustomAPIService] Invalid URL for user interactions")
             completion([])
             return
         }
@@ -949,31 +1025,47 @@ class CustomAPIService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let token = apiToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔐 [CustomAPIService] Using API token for authentication")
+        } else {
+            print("⚠️ [CustomAPIService] No API token available")
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [CustomAPIService] Network error fetching interactions: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion([])
                 }
                 return
             }
 
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] Interactions API response status: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("⚠️ [CustomAPIService] Non-200 status code for interactions")
+                }
+            }
+            
             guard let data = data else {
+                print("❌ [CustomAPIService] No data received from interactions API")
                 DispatchQueue.main.async {
                     completion([])
                 }
                 return
             }
 
+            print("📦 [CustomAPIService] Received \(data.count) bytes from interactions API")
+            
             Task.detached {
                 do {
                     let interactions = try self.decode(type: [UserInteractionsResponse].self, from: data)
                     let githubIds = interactions.map { $0.repository }
+                    print("✅ [CustomAPIService] Successfully decoded \(interactions.count) interactions, \(githubIds.count) unique repo IDs")
                     await MainActor.run {
                         completion(githubIds)
                     }
                 } catch {
+                    print("❌ [CustomAPIService] Failed to decode interactions: \(error)")
                     await MainActor.run {
                         completion([])
                     }
@@ -1060,10 +1152,39 @@ class CustomAPIService: ObservableObject {
     }
 }
 
+// MARK: - GitHub Search API Models
+
+struct GitHubSearchResponse: Codable, Sendable {
+    let items: [GitHubSearchRepository]
+}
+
+struct GitHubSearchRepository: Codable, Sendable {
+    let id: Int
+    let name: String
+    let owner: GitHubSearchOwner
+    let html_url: String
+    let description: String?
+    let language: String?
+    let stargazers_count: Int
+    let forks_count: Int
+}
+
+struct GitHubSearchOwner: Codable, Sendable {
+    let login: String
+}
+
 // MARK: - Trending Period Enum
 
 enum TrendingPeriod: String, Codable, Sendable {
     case daily
     case weekly
     case monthly
+
+    var daysAgo: Int {
+        switch self {
+        case .daily: return 1
+        case .weekly: return 7
+        case .monthly: return 30
+        }
+    }
 }

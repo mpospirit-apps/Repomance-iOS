@@ -207,10 +207,13 @@ struct TrendingView: View {
             TrendingInfoView()
         }
         .onAppear {
+            print("👀 [TrendingView] onAppear triggered")
             checkConnectionAndInitialize()
         }
         .onChange(of: shouldRefresh) { _, newValue in
+            print("🔄 [TrendingView] shouldRefresh changed to: \(newValue)")
             if newValue {
+                print("🔄 [TrendingView] Triggering loadTrendingRepos due to refresh")
                 loadTrendingRepos()
                 shouldRefresh = false
             }
@@ -220,7 +223,11 @@ struct TrendingView: View {
     // MARK: - Initialization
 
     private func checkConnectionAndInitialize() {
+        print("🔌 [TrendingView] checkConnectionAndInitialize called")
+        print("🔌 [TrendingView] Network connected: \(networkMonitor.isConnected)")
+        
         if !networkMonitor.isConnected {
+            print("⚠️ [TrendingView] No connection, showing no connection view")
             showNoConnection = true
             return
         }
@@ -229,43 +236,56 @@ struct TrendingView: View {
 
         // Load from cache or fetch new
         if trendingManager.hasRepos {
+            print("📦 [TrendingView] TrendingManager has repos (\(trendingManager.remainingCount) remaining), loading from cache")
             loadFromCache()
         } else {
-            isLoading = true
-            currentRepository = nil
+            print("🔄 [TrendingView] TrendingManager has no repos, auto-fetching trending repos")
+            loadTrendingRepos()
         }
     }
 
     // MARK: - Load Trending Repos
 
     private func loadTrendingRepos() {
+        print("🚀 [TrendingView] loadTrendingRepos called")
+        
         guard let username = authManager.username,
               let githubToken = authManager.accessToken else {
+            print("❌ [TrendingView] Missing authentication - username: \(authManager.username ?? "nil"), token: \(authManager.accessToken != nil ? "present" : "nil")")
             errorMessage = "Authentication required"
             isLoading = false
             return
         }
 
+        print("✅ [TrendingView] Authentication OK - username: \(username)")
+        
         isLoading = true
         errorMessage = nil
         currentRepository = nil
 
+        print("🔄 [TrendingView] Calling trendingManager.fetchTrending...")
         trendingManager.fetchTrending(
             username: username,
             githubToken: githubToken
         ) { success, error in
+            print("📬 [TrendingView] fetchTrending callback - success: \(success), error: \(error ?? "nil")")
+            
             DispatchQueue.main.async {
                 self.isLoading = false
 
                 if success {
                     if let error = error {
+                        print("⚠️ [TrendingView] Success with message: \(error)")
                         self.errorMessage = error
                     } else if trendingManager.hasRepos {
+                        print("✅ [TrendingView] Has repos, loading from cache...")
                         self.loadFromCache()
                     } else {
+                        print("⚠️ [TrendingView] No trending repos found")
                         self.errorMessage = "No trending repos found"
                     }
                 } else {
+                    print("❌ [TrendingView] Failed to load trending repos: \(error ?? "unknown error")")
                     self.errorMessage = error ?? "Failed to load trending repos"
                 }
             }
@@ -275,15 +295,21 @@ struct TrendingView: View {
     // MARK: - Load from Cache
 
     private func loadFromCache() {
+        print("📦 [TrendingView] loadFromCache called")
+        
         guard let enrichedRepo = trendingManager.getNextRepo() else {
+            print("❌ [TrendingView] No repo available from trendingManager")
             currentRepository = nil
             isLoading = false
             return
         }
 
+        print("✅ [TrendingView] Got repo from manager: \(enrichedRepo.trending.author)/\(enrichedRepo.trending.name)")
+        
         // Convert to Repository model
         let repository = Repository(from: enrichedRepo)
         currentRepository = repository
+        print("✅ [TrendingView] Set currentRepository: \(repository.owner)/\(repository.name)")
 
         // Create language info
         if let language = enrichedRepo.trending.language,
@@ -293,12 +319,15 @@ struct TrendingView: View {
                 percentage: 100.0,
                 color: color
             )]
+            print("🎨 [TrendingView] Language info: \(language) (\(color))")
         } else {
             currentLanguages = []
+            print("⚠️ [TrendingView] No language info available")
         }
 
         // Fetch README from GitHub
         if let githubToken = authManager.accessToken {
+            print("📖 [TrendingView] Fetching README for \(repository.owner)/\(repository.name)")
             apiService.fetchGitHubReadme(
                 owner: repository.owner,
                 repo: repository.name,
@@ -306,11 +335,15 @@ struct TrendingView: View {
             ) { readme in
                 DispatchQueue.main.async {
                     self.currentReadme = readme ?? ""
+                    print("✅ [TrendingView] README loaded, length: \(self.currentReadme.count) chars")
                 }
             }
+        } else {
+            print("⚠️ [TrendingView] No GitHub token available for README fetch")
         }
 
         isLoading = false
+        print("✅ [TrendingView] loadFromCache complete")
     }
 
     // MARK: - Navigation

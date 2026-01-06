@@ -98,6 +98,7 @@ struct TrendingEmptyStateView: View {
             }
 
             Button(action: {
+                print("🔘 [TrendingEmptyStateView] LOAD TRENDING button pressed")
                 loadTrending()
             }) {
                 HStack(spacing: 8) {

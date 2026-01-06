@@ -7,7 +7,7 @@
 
 import Foundation
 
-// Model for GitHub trending API response from ghapi.huchen.dev
+// Model for GitHub trending repositories (from GitHub search API)
 struct GitHubTrendingRepository: Codable, Identifiable, Sendable {
     let author: String
     let name: String
@@ -19,6 +19,7 @@ struct GitHubTrendingRepository: Codable, Identifiable, Sendable {
     let forks: Int
     let currentPeriodStars: Int
     let builtBy: [TrendingContributor]?
+    let githubId: Int?  // GitHub's numeric ID from search API
 
     var id: String {
         "\(author)/\(name)"
