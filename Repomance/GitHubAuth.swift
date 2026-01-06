@@ -129,6 +129,10 @@ class GitHubAuthManager: ObservableObject {
                 self.userId = userId
                 self.isAuthenticated = true
 
+                // Persist username and userId for session restoration
+                UserDefaults.standard.set(username, forKey: "github_username")
+                UserDefaults.standard.set(userId, forKey: "user_id")
+
                 // Still fetch GitHub user info for githubUserId
                 self.fetchUserInfo()
             }
@@ -164,6 +168,10 @@ class GitHubAuthManager: ObservableObject {
             userApiToken = apiToken
             isAuthenticated = true
 
+            // Restore username and userId from UserDefaults
+            username = UserDefaults.standard.string(forKey: "github_username")
+            userId = UserDefaults.standard.integer(forKey: "user_id")
+
             // Also try to load GitHub token if available
             if let githubToken = UserDefaults.standard.string(forKey: "github_access_token") {
                 accessToken = githubToken
@@ -184,6 +192,8 @@ class GitHubAuthManager: ObservableObject {
         userApiToken = nil
         isAuthenticated = false
         UserDefaults.standard.removeObject(forKey: "github_access_token")
+        UserDefaults.standard.removeObject(forKey: "github_username")
+        UserDefaults.standard.removeObject(forKey: "user_id")
         KeychainHelper.shared.deleteAPIToken()
     }
     
