@@ -1,6 +1,6 @@
-# Repomance iOS
+<img src="Repomance/Assets.xcassets/Logo.imageset/Logo.png" alt="My logo" width="8%" align="left"/>
 
-> Available on Android soon
+# Repomance iOS
 
 A mobile app for discovering and starring GitHub repositories through a dating app like swipe interface.
 
