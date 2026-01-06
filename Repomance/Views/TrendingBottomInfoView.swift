@@ -13,61 +13,44 @@ struct TrendingBottomInfoView: View {
     let selectedLanguage: String?
 
     var body: some View {
-        HStack(spacing: 8) {
-            // Period badge
-            HStack(spacing: 4) {
-                Image(systemName: "clock")
-                    .font(.system(size: 10, weight: .bold))
-                Text(selectedPeriod.rawValue.uppercased())
-                    .font(.system(size: 11, weight: .black))
-                    .textCase(.uppercase)
+        HStack(spacing: 0) {
+            // Period Section
+            VStack(spacing: 4) {
+                Text("Period")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color.textSecondary)
+                Text(selectedPeriod.rawValue.capitalized)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color.textPrimary)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.appAccent)
-            .foregroundColor(.white)
-            .overlay(
-                Rectangle()
-                    .stroke(Color.brutalistBorder, lineWidth: 2)
-            )
+            .frame(maxWidth: .infinity)
 
-            // Language badge (if filtered)
-            if let language = selectedLanguage {
-                HStack(spacing: 4) {
-                    Image(.code)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 10, height: 10)
-                    Text(language.uppercased())
-                        .font(.system(size: 11, weight: .black))
-                        .textCase(.uppercase)
-                }
+            // Divider
+            Rectangle()
+                .fill(Color.textSecondary.opacity(0.2))
+                .frame(width: 1, height: 28)
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.appBackgroundLight)
-                .foregroundColor(Color.textPrimary)
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.brutalistBorder, lineWidth: 2)
-                )
-            }
 
-            Spacer()
-
-            // Remaining count
-            HStack(spacing: 4) {
-                Text("\(remainingCount)")
-                    .font(.system(size: 14, weight: .black))
-                    .foregroundColor(Color.appAccent)
-                Image(.document)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 12, height: 12)
-                    .foregroundColor(Color.appAccent)
+            // Language/Remaining Section
+            VStack(spacing: 4) {
+                Text(selectedLanguage != nil ? "Language" : "Remaining")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color.textSecondary)
+                Text(selectedLanguage ?? "\(remainingCount)")
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color.textPrimary)
             }
+            .frame(maxWidth: .infinity)
         }
+        .padding(.vertical, 10)
         .padding(.horizontal)
+        .background(Color.appBackgroundLight)
+        .overlay(
+            Rectangle()
+                .stroke(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThin)
+        )
+        .brutalistShadow(BrutalistStyle.Shadow.smallBlack)
         .padding(.vertical, 12)
-        .background(Color.appBackground.opacity(0.95))
+        .padding(.horizontal)
     }
 }

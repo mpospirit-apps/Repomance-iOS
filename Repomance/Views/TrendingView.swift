@@ -151,6 +151,13 @@ struct TrendingView: View {
                                 }
                             }
                         )
+                        .id(repository.id)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.9).combined(with: .opacity),
+                            removal: .identity
+                        ))
                     } else {
                         TrendingEmptyStateView(
                             isLoading: isLoading,
