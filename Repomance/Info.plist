@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.repomance.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>repomance</string>
+			</array>
+		</dict>
+	</array>
+	<key>GITHUB_OAUTH_CLIENT_ID</key>
+	<string>$(GITHUB_OAUTH_CLIENT_ID)</string>
+	<key>REPOMANCE_API_KEY</key>
+	<string>$(REPOMANCE_API_KEY)</string>
+</dict>
+</plist>

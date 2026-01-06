@@ -1,0 +1,5 @@
+REPOMANCE_API_KEY = YOUR_API_KEY_HERE
+GITHUB_OAUTH_CLIENT_ID = YOUR_CLIENT_ID_HERE
+
+// This file includes Config.local.xcconfig which overrides the defaults above
+#include? "Config.local.xcconfig"
