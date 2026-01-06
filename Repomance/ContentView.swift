@@ -10,25 +10,23 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     @State private var skipAuth = false
-    @State private var selectedTab = 0
+    @State private var selectedView: ViewType = .curated
+
+    enum ViewType {
+        case curated
+        case trending
+    }
 
     var body: some View {
         Group {
             if authManager.isAuthenticated || skipAuth {
-                TabView(selection: $selectedTab) {
-                    SwipeView()
-                        .tabItem {
-                            Label("Curated", systemImage: "star.fill")
-                        }
-                        .tag(0)
-
-                    TrendingView()
-                        .tabItem {
-                            Label("Trending", systemImage: "chart.line.uptrend.xyaxis")
-                        }
-                        .tag(1)
+                ZStack {
+                    if selectedView == .curated {
+                        SwipeView(selectedView: $selectedView)
+                    } else {
+                        TrendingView(selectedView: $selectedView)
+                    }
                 }
-                .accentColor(Color.appAccent)
             } else {
                 LandingView(isAuthenticated: $authManager.isAuthenticated, skipAuth: $skipAuth)
             }

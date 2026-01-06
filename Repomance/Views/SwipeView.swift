@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SwipeView: View {
+    @Binding var selectedView: ContentView.ViewType
     @EnvironmentObject var authManager: GitHubAuthManager
     private let apiService = CustomAPIService.shared
     @StateObject private var repoCache = RepoCache.shared
@@ -69,6 +70,7 @@ struct SwipeView: View {
                 VStack(spacing: 0) {
                     // Header
                     SwipeHeaderView(
+                        selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
                         showAbout: $showAbout,
                         showFilters: $showFilters,
@@ -486,5 +488,7 @@ struct SwipeView: View {
 
 
 #Preview {
-    SwipeView()
+    @Previewable @State var selectedView: ContentView.ViewType = .curated
+    SwipeView(selectedView: $selectedView)
+        .environmentObject(GitHubAuthManager())
 }

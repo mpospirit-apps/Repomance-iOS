@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct TrendingView: View {
+    @Binding var selectedView: ContentView.ViewType
     @EnvironmentObject var authManager: GitHubAuthManager
     @StateObject private var trendingManager = TrendingRepoManager.shared
     @StateObject private var networkMonitor = NetworkMonitor.shared
@@ -49,6 +50,7 @@ struct TrendingView: View {
                 VStack(spacing: 0) {
                     // Header
                     TrendingHeaderView(
+                        selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
                         showFilters: $showFilters,
                         showInfo: $showInfo

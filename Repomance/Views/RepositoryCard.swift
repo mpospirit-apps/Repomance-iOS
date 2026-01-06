@@ -275,6 +275,7 @@ extension Color {
 }
 
 #Preview {
-    SwipeView()
+    @Previewable @State var selectedView: ContentView.ViewType = .curated
+    SwipeView(selectedView: $selectedView)
         .environmentObject(GitHubAuthManager())
 }
