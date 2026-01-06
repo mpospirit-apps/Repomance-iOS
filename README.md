@@ -1,4 +1,4 @@
-<img src="Repomance/Assets.xcassets/Logo.imageset/Logo.png" alt="My logo" width="8%" align="left"/>
+<img src="Repomance/Assets.xcassets/Logo.imageset/Logo.png" alt="My logo" width="45px" align="left"/>
 
 # Repomance iOS
 
