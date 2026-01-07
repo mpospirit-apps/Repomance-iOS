@@ -433,8 +433,13 @@ class CustomAPIService: ObservableObject {
     }
     
     func recordInteraction(username: String, githubRepoId: Int, interactionName: String, completion: @escaping @Sendable (Bool) -> Void) {
+        print("💾 [CustomAPIService] Recording interaction - username: \(username), repoId: \(githubRepoId), interaction: \(interactionName)")
+
         let urlString = "\(baseURL)interactions/"
+        print("🌐 [CustomAPIService] Request URL: \(urlString)")
+
         guard let url = URL(string: urlString) else {
+            print("❌ [CustomAPIService] Invalid URL for recordInteraction: \(urlString)")
             completion(false)
             return
         }
@@ -445,6 +450,9 @@ class CustomAPIService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token = apiToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔐 [CustomAPIService] Using API token for authentication")
+        } else {
+            print("⚠️ [CustomAPIService] No API token available for recordInteraction")
         }
 
         let body: [String: Any] = [
@@ -453,11 +461,15 @@ class CustomAPIService: ObservableObject {
             "interaction": interactionName
         ]
 
+        print("📦 [CustomAPIService] Request body: \(body)")
+
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: request) { data, response, error in
 
             if let error = error {
+                print("❌ [CustomAPIService] Network error recording interaction: \(error.localizedDescription)")
+                print("❌ [CustomAPIService] Failed to record \(interactionName) for repo \(githubRepoId)")
                 DispatchQueue.main.async {
                     completion(false)
                 }
@@ -465,19 +477,122 @@ class CustomAPIService: ObservableObject {
             }
 
             if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] recordInteraction API response status: \(httpResponse.statusCode)")
+
                 if httpResponse.statusCode == 201 {
+                    print("✅ [CustomAPIService] Successfully recorded \(interactionName) for repo \(githubRepoId)")
                     DispatchQueue.main.async {
                         completion(true)
                     }
                 } else {
+                    print("❌ [CustomAPIService] Failed to record interaction - status \(httpResponse.statusCode)")
+
+                    // Log response body for debugging
+                    if let data = data, let responseBody = String(data: data, encoding: .utf8) {
+                        print("📄 [CustomAPIService] Response body: \(responseBody)")
+                    }
+
                     DispatchQueue.main.async {
                         completion(false)
                     }
                 }
+            } else {
+                print("❌ [CustomAPIService] No HTTP response received for recordInteraction")
+                DispatchQueue.main.async {
+                    completion(false)
+                }
             }
         }.resume()
     }
-    
+
+    func saveTrendingRepo(
+        githubId: Int,
+        owner: String,
+        name: String,
+        description: String?,
+        stars: Int,
+        forks: Int,
+        language: String?,
+        url: String?,
+        completion: @escaping @Sendable (Bool) -> Void
+    ) {
+        print("💾 [CustomAPIService] Saving trending repo to database - \(owner)/\(name) (ID: \(githubId))")
+
+        let urlString = "\(baseURL)repos/trending/save/"
+        print("🌐 [CustomAPIService] Request URL: \(urlString)")
+
+        guard let apiURL = URL(string: urlString) else {
+            print("❌ [CustomAPIService] Invalid URL for saveTrendingRepo: \(urlString)")
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: apiURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔐 [CustomAPIService] Using API token for authentication")
+        } else {
+            print("⚠️ [CustomAPIService] No API token available for saveTrendingRepo")
+        }
+
+        let body: [String: Any] = [
+            "github_id": githubId,
+            "owner": owner,
+            "name": name,
+            "description": description ?? "",
+            "stargazer_count": stars,
+            "fork_count": forks,
+            "language": language ?? "",
+            "url": url ?? ""
+        ]
+
+        print("📦 [CustomAPIService] Request body: \(body)")
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+
+            if let error = error {
+                print("❌ [CustomAPIService] Network error saving trending repo: \(error.localizedDescription)")
+                print("❌ [CustomAPIService] Failed to save \(owner)/\(name)")
+                DispatchQueue.main.async {
+                    completion(false)
+                }
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] saveTrendingRepo API response status: \(httpResponse.statusCode)")
+
+                if httpResponse.statusCode == 201 {
+                    print("✅ [CustomAPIService] Successfully saved trending repo \(owner)/\(name) (ID: \(githubId))")
+                    DispatchQueue.main.async {
+                        completion(true)
+                    }
+                } else {
+                    print("❌ [CustomAPIService] Failed to save trending repo - status \(httpResponse.statusCode)")
+
+                    // Log response body for debugging
+                    if let data = data, let responseBody = String(data: data, encoding: .utf8) {
+                        print("📄 [CustomAPIService] Response body: \(responseBody)")
+                    }
+
+                    DispatchQueue.main.async {
+                        completion(false)
+                    }
+                }
+            } else {
+                print("❌ [CustomAPIService] No HTTP response received for saveTrendingRepo")
+                DispatchQueue.main.async {
+                    completion(false)
+                }
+            }
+        }.resume()
+    }
+
     func fetchUninteractedRepos(username: String, batchSize: Int = 10, categories: [String]? = nil, minStarCount: Int? = nil, maxStarCount: Int? = nil, languages: [String]? = nil, completion: @escaping @Sendable (UninteractedReposResponse?) -> Void) {
         var components = URLComponents(string: "\(baseURL)repos/uninteracted/")!
         var queryItems = [
