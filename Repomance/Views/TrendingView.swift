@@ -173,37 +173,12 @@ struct TrendingView: View {
                         TrendingBottomInfoView(
                             remainingCount: trendingManager.remainingCount,
                             selectedPeriod: trendingManager.filterPeriod,
-                            selectedLanguage: trendingManager.filterLanguage
+                            selectedLanguage: trendingManager.filterLanguage,
+                            showToast: showToast,
+                            toastMessage: toastMessage,
+                            toastColor: toastColor
                         )
                     }
-                }
-
-                // Toast notification
-                if showToast, let message = toastMessage {
-                    VStack {
-                        HStack(spacing: 8) {
-                            Image(systemName: toastColor == Color.starColor ? "star.fill" : "xmark.circle.fill")
-                                .font(.system(size: 16, weight: .bold))
-                            Text(message)
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(toastColor)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.brutalistBorder, lineWidth: 2)
-                        )
-                        .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
-                        .padding(.top, 60)
-
-                        Spacer()
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .animation(.spring(), value: showToast)
                 }
             }
         }
