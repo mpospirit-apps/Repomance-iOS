@@ -20,7 +20,7 @@ struct TrendingView: View {
     @State private var dismissed = 0
     @State private var starred = 0
     @State private var showFilters = false
-    @State private var showInfo = false
+    @State private var showSettings = false
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var toastMessage: String?
@@ -53,7 +53,7 @@ struct TrendingView: View {
                         selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
                         showFilters: $showFilters,
-                        showInfo: $showInfo
+                        showSettings: $showSettings
                     )
 
                     // Card Stack
@@ -185,8 +185,8 @@ struct TrendingView: View {
         .sheet(isPresented: $showFilters) {
             TrendingFiltersView(onRefresh: $shouldRefresh)
         }
-        .sheet(isPresented: $showInfo) {
-            TrendingInfoView()
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
         .onAppear {
             print("👀 [TrendingView] onAppear triggered")
@@ -338,109 +338,6 @@ struct TrendingView: View {
         } else {
             currentRepository = nil
             errorMessage = "You've seen all trending repos!"
-        }
-    }
-}
-
-// MARK: - Trending Info View
-
-struct TrendingInfoView: View {
-    @Environment(\.dismiss) var dismiss
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.appBackground
-                    .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("About Trending")
-                                .font(.title2)
-                                .fontWeight(.black)
-                                .foregroundColor(Color.textPrimary)
-
-                            Text("Discover what's popular on GitHub right now. Trending repositories are updated frequently and reflect current developer interests.")
-                                .font(.body)
-                                .foregroundColor(Color.textSecondary)
-                        }
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Features")
-                                .font(.headline)
-                                .fontWeight(.heavy)
-                                .foregroundColor(Color.textPrimary)
-
-                            FeatureRow(
-                                icon: "chart.line.uptrend.xyaxis",
-                                title: "Real-time Trending",
-                                description: "Discover repositories gaining popularity today, this week, or this month"
-                            )
-
-                            FeatureRow(
-                                icon: "arrow.clockwise",
-                                title: "Unlimited Browsing",
-                                description: "No daily limits - explore as many trending repos as you want"
-                            )
-
-                            FeatureRow(
-                                icon: "line.3.horizontal.decrease.circle",
-                                title: "Smart Filtering",
-                                description: "Filter by programming language and time period"
-                            )
-
-                            FeatureRow(
-                                icon: "checkmark.circle",
-                                title: "No Duplicates",
-                                description: "Repos you've starred or passed won't appear again"
-                            )
-                        }
-
-                        Spacer()
-                    }
-                    .padding()
-                }
-            }
-            .navigationTitle("Trending")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color.textPrimary)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.appAccent)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color.textPrimary)
-
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(Color.textSecondary)
-            }
         }
     }
 }

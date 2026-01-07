@@ -11,7 +11,7 @@ struct TrendingHeaderView: View {
     @Binding var selectedView: ContentView.ViewType
     let hasActiveFilters: Bool
     @Binding var showFilters: Bool
-    @Binding var showInfo: Bool
+    @Binding var showSettings: Bool
 
     var body: some View {
         ZStack {
@@ -52,12 +52,14 @@ struct TrendingHeaderView: View {
                 }
                 .buttonStyle(BrutalistIconButtonStyle(size: 44))
 
-                // Info button
+                // Settings button
                 Button(action: {
-                    showInfo.toggle()
+                    showSettings.toggle()
                 }) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 20, weight: .regular))
+                    Image(.settings)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
                         .foregroundColor(Color.textSecondary)
                         .padding(10)
                 }
