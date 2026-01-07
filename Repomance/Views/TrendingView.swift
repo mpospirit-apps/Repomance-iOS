@@ -34,7 +34,7 @@ struct TrendingView: View {
 
     // Computed property to check if any filters are active
     private var hasActiveFilters: Bool {
-        trendingManager.filterLanguage != nil || trendingManager.filterPeriod != .daily
+        trendingManager.filterLanguage != nil || trendingManager.filterPeriod != .weekly
     }
 
     var body: some View {
@@ -184,9 +184,11 @@ struct TrendingView: View {
         }
         .sheet(isPresented: $showFilters) {
             TrendingFiltersView(onRefresh: $shouldRefresh)
+                .presentationCornerRadius(0)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+                .presentationCornerRadius(0)
         }
         .onAppear {
             print("👀 [TrendingView] onAppear triggered")

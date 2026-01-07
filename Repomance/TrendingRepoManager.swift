@@ -14,7 +14,7 @@ class TrendingRepoManager: ObservableObject {
 
     @Published var trendingRepos: [EnrichedTrendingRepo] = []
     @Published var filterLanguage: String? = nil
-    @Published var filterPeriod: TrendingPeriod = .daily
+    @Published var filterPeriod: TrendingPeriod = .weekly
 
     private var currentIndex = 0
     private let cacheKey = "RepomanceTrendingCache"

@@ -36,7 +36,7 @@ struct TrendingEmptyStateView: View {
             }
 
             // Filter Summary Card
-            if trendingManager.filterLanguage != nil || trendingManager.filterPeriod != .daily {
+            if trendingManager.filterLanguage != nil || trendingManager.filterPeriod != .weekly {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Image(.filter)

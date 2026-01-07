@@ -10,6 +10,7 @@ import SwiftUI
 struct TrendingFiltersView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: GitHubAuthManager
+    @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var trendingManager = TrendingRepoManager.shared
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
     @State private var isLoading = false
@@ -48,14 +49,86 @@ struct TrendingFiltersView: View {
                                 .fontWeight(.heavy)
                                 .foregroundColor(Color.textPrimary)
 
-                            Picker("Period", selection: $trendingManager.filterPeriod) {
-                                Text("Daily").tag(TrendingPeriod.daily)
-                                Text("Weekly").tag(TrendingPeriod.weekly)
-                                Text("Monthly").tag(TrendingPeriod.monthly)
+                            // Time period buttons in flow layout
+                            FlowLayout(spacing: 8) {
+                                // Today button
+                                Button(action: {
+                                    if hapticFeedbackEnabled {
+                                        let generator = UIImpactFeedbackGenerator(style: .light)
+                                        generator.impactOccurred()
+                                    }
+                                    trendingManager.filterPeriod = .daily
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(trendingManager.filterPeriod == .daily ? .checkboxChecked : .checkboxUnchecked)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 16, height: 16)
+                                        Text("Today")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                }
+                                .buttonStyle(BrutalistButtonStyle(
+                                    backgroundColor: trendingManager.filterPeriod == .daily ? (Color.appAccent) : Color.appBackgroundLight,
+                                    foregroundColor: trendingManager.filterPeriod == .daily ? .white : Color.textPrimary,
+                                    shadow: .smallBlack
+                                ))
+
+                                // This Week button
+                                Button(action: {
+                                    if hapticFeedbackEnabled {
+                                        let generator = UIImpactFeedbackGenerator(style: .light)
+                                        generator.impactOccurred()
+                                    }
+                                    trendingManager.filterPeriod = .weekly
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(trendingManager.filterPeriod == .weekly ? .checkboxChecked : .checkboxUnchecked)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 16, height: 16)
+                                        Text("This Week")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                }
+                                .buttonStyle(BrutalistButtonStyle(
+                                    backgroundColor: trendingManager.filterPeriod == .weekly ? (Color.appAccent) : Color.appBackgroundLight,
+                                    foregroundColor: trendingManager.filterPeriod == .weekly ? .white : Color.textPrimary,
+                                    shadow: .smallBlack
+                                ))
+
+                                // This Month button
+                                Button(action: {
+                                    if hapticFeedbackEnabled {
+                                        let generator = UIImpactFeedbackGenerator(style: .light)
+                                        generator.impactOccurred()
+                                    }
+                                    trendingManager.filterPeriod = .monthly
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(trendingManager.filterPeriod == .monthly ? .checkboxChecked : .checkboxUnchecked)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 16, height: 16)
+                                        Text("This Month")
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                }
+                                .buttonStyle(BrutalistButtonStyle(
+                                    backgroundColor: trendingManager.filterPeriod == .monthly ? (Color.appAccent) : Color.appBackgroundLight,
+                                    foregroundColor: trendingManager.filterPeriod == .monthly ? .white : Color.textPrimary,
+                                    shadow: .smallBlack
+                                ))
                             }
-                            .pickerStyle(.segmented)
-                            .background(Color.appBackgroundLight)
-                            .cornerRadius(0)
                         }
 
                         // Language Filter
@@ -143,22 +216,23 @@ struct TrendingFiltersView: View {
                             generator.impactOccurred()
                         }
                         trendingManager.filterLanguage = nil
-                        trendingManager.filterPeriod = .daily
+                        trendingManager.filterPeriod = .weekly
                     }) {
                         HStack {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16, weight: .bold))
+                            Image(.close)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
                             Text("CLEAR FILTERS")
-                                .font(.headline)
-                                .fontWeight(.heavy)
+                                .fontWeight(.black)
+                                .textCase(.uppercase)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                        .padding(16)
                     }
                     .buttonStyle(BrutalistButtonStyle(
                         backgroundColor: Color.appBackgroundLight,
-                        foregroundColor: Color.textPrimary,
-                        shadow: .cardBlack
+                        foregroundColor: Color.textPrimary
                     ))
 
                     // Apply & Refresh Button
@@ -173,43 +247,56 @@ struct TrendingFiltersView: View {
                         HStack {
                             if isLoading {
                                 ProgressView()
-                                    .tint(.white)
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 16, weight: .bold))
+                                Image(.refresh)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
                                 Text("APPLY & REFRESH")
-                                    .font(.headline)
-                                    .fontWeight(.heavy)
+                                    .fontWeight(.black)
+                                    .textCase(.uppercase)
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                        .padding(16)
+                        .opacity(isLoading ? 0.6 : 1.0)
                     }
                     .buttonStyle(BrutalistButtonStyle(
-                        backgroundColor: Color.appAccent,
-                        foregroundColor: .white,
-                        shadow: .cardBlack
+                        backgroundColor: Color.appAccent
                     ))
                     .disabled(isLoading)
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 32)
-                .frame(maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 16)
+                .padding(.top, 8)
+                .background(Color.appBackground)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
             .navigationTitle("Trending Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color.textPrimary)
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 8) {
+                        BrutalistDragIndicator()
+                        Text("TRENDING FILTERS")
+                            .font(.system(.headline))
+                            .fontWeight(.black)
+                            .textCase(.uppercase)
+                            .foregroundColor(Color.appAccent)
                     }
                 }
             }
+            .toolbarBackground(Color.appBackgroundLight, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .onAppear {
+                if hapticFeedbackEnabled {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                }
+            }
         }
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }
 
