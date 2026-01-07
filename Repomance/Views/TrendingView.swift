@@ -28,6 +28,7 @@ struct TrendingView: View {
     @State private var toastColor: Color = .clear
     @State private var shouldRefresh = false
     @State private var showNoConnection = false
+    @State private var swipeProgress: CGFloat = 0
 
     @AppStorage("rizzSoundEnabled") private var rizzSoundEnabled = false
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
@@ -181,6 +182,9 @@ struct TrendingView: View {
                                         }
                                     }
                                 }
+                            },
+                            onSwipeProgress: { progress in
+                                self.swipeProgress = progress
                             }
                         )
                         .id(repository.id)
@@ -202,13 +206,17 @@ struct TrendingView: View {
 
                     // Bottom info
                     if currentRepository != nil {
+                        // Push bottom info to the bottom
+                        Spacer()
+
                         TrendingBottomInfoView(
                             remainingCount: trendingManager.remainingCount,
                             selectedPeriod: trendingManager.filterPeriod,
                             selectedLanguage: trendingManager.filterLanguage,
                             showToast: showToast,
                             toastMessage: toastMessage,
-                            toastColor: toastColor
+                            toastColor: toastColor,
+                            swipeProgress: swipeProgress
                         )
                     }
                 }
@@ -390,6 +398,7 @@ struct TrendingView: View {
 
     private func loadNextRepository() {
         trendingManager.moveToNextRepo()
+        swipeProgress = 0 // Reset swipe progress for new card
 
         if trendingManager.hasRepos {
             loadFromCache()

@@ -14,6 +14,23 @@ struct TrendingBottomInfoView: View {
     let showToast: Bool
     let toastMessage: String?
     let toastColor: Color
+    let swipeProgress: CGFloat
+
+    private var bottomOffset: CGFloat {
+        // Move the counters down as the card is swiped
+        // For successful swipes (abs > 1), continue moving down and away
+        let maxOffset: CGFloat = 30
+        let absProgress = abs(swipeProgress)
+
+        if absProgress > 1.0 {
+            // Card is being swiped away - move counters further down
+            let extraMovement = (absProgress - 1.0) * 100 // Amplify movement during swipe away
+            return maxOffset + extraMovement
+        } else {
+            // Normal drag gesture - gradual movement
+            return absProgress * maxOffset
+        }
+    }
 
     var body: some View {
         Group {
@@ -61,12 +78,12 @@ struct TrendingBottomInfoView: View {
                         .frame(width: 1, height: 28)
                         .padding(.horizontal, 8)
 
-                    // Language/Remaining Section
+                    // Language Section
                     VStack(spacing: 4) {
-                        Text(selectedLanguage != nil ? "Language" : "Remaining")
+                        Text("Language")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(Color.textSecondary)
-                        Text(selectedLanguage ?? "\(remainingCount)")
+                        Text(selectedLanguage ?? "all")
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(Color.textPrimary)
                     }
@@ -88,6 +105,8 @@ struct TrendingBottomInfoView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal)
+        .offset(y: bottomOffset)
         .animation(.easeOut(duration: 0.4), value: showToast)
+        .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.8), value: swipeProgress)
     }
 }

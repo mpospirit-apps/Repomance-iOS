@@ -22,12 +22,12 @@ struct TrendingEmptyStateView: View {
                 .foregroundColor(errorMessage != nil ? .yellow : (Color.appAccent))
 
             VStack(spacing: 8) {
-                Text(errorMessage != nil ? "No Trending Repos Found" : "Discover Trending Repos")
+                Text(errorMessage != nil ? "No Trending Repos Found" : "Ready for Trending Repos")
                     .font(.system(.title2))
                     .fontWeight(.black)
                     .foregroundColor(Color.textPrimary)
 
-                Text(errorMessage ?? "Explore what's popular on GitHub today")
+                Text(errorMessage ?? "Load trending to discover popular repositories")
                     .font(.system(.subheadline))
                     .fontWeight(.bold)
                     .foregroundColor(Color.textSecondary)
@@ -36,66 +36,63 @@ struct TrendingEmptyStateView: View {
             }
 
             // Filter Summary Card
-            if trendingManager.filterLanguage != nil || trendingManager.filterPeriod != .weekly {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(.filter)
+            VStack(alignment: .leading, spacing: 12) {
+                // Filters Header
+                HStack {
+                    Image(.filter)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(Color.appAccent)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Current Filters")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color.textSecondary)
+                    }
+
+                    Spacer()
+                }
+
+                Divider()
+                    .background(Color.textSecondary.opacity(0.3))
+
+                // Active Filters
+                VStack(alignment: .leading, spacing: 6) {
+                    // Period
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color.appAccent)
+                        Text(trendingManager.filterPeriod.rawValue.capitalized)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color.textPrimary)
+                    }
+
+                    // Language
+                    HStack(spacing: 6) {
+                        Image(.code)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 16, height: 16)
+                            .frame(width: 12, height: 12)
                             .foregroundColor(Color.appAccent)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Current Filters")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.textSecondary)
-                        }
-
-                        Spacer()
-                    }
-
-                    Divider()
-                        .background(Color.textSecondary.opacity(0.3))
-
-                    // Active Filters
-                    VStack(alignment: .leading, spacing: 6) {
-                        // Period
-                        HStack(spacing: 6) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(Color.appAccent)
-                            Text(trendingManager.filterPeriod.rawValue.capitalized)
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.textPrimary)
-                        }
-
-                        // Language
-                        if let language = trendingManager.filterLanguage {
-                            HStack(spacing: 6) {
-                                Image(.code)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 12, height: 12)
-                                    .foregroundColor(Color.appAccent)
-                                Text(language.capitalized)
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textPrimary)
-                            }
-                        }
+                        Text(trendingManager.filterLanguage?.capitalized ?? "All Languages")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color.textPrimary)
                     }
                 }
-                .padding(16)
-                .background(Color.appBackgroundLight)
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThin)
-                )
-                .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
-                .padding(.horizontal)
             }
+            .padding(16)
+            .background(Color.appBackgroundLight)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThin)
+            )
+            .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
+            .padding(.horizontal)
 
             Button(action: {
                 print("🔘 [TrendingEmptyStateView] LOAD TRENDING button pressed")
