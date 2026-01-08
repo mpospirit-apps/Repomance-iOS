@@ -30,7 +30,7 @@ struct LandingView: View {
                         .font(.system(size: 48, weight: .black))
                         .foregroundColor(Color.appAccent)
 
-                    Text("DISCOVER & STAR REPOS")
+                    Text("Discover and Star Repos")
                         .font(.system(.title3))
                         .fontWeight(.heavy)
                         .foregroundColor(Color.textSecondary)
@@ -55,35 +55,54 @@ struct LandingView: View {
                 .buttonStyle(BrutalistButtonStyle())
                 .padding(.horizontal, 32)
 
-                // Reason for OAuth
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image(.lock)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .foregroundColor(Color.appAccent)
-
-                        Text("Why Repomance needs public repository access")
+                // Info Section
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
                             .font(.system(.headline))
                             .fontWeight(.heavy)
                             .foregroundColor(Color.textPrimary)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Repomance is open source")
+                                .font(.system(.headline))
+                                .fontWeight(.heavy)
+                                .foregroundColor(Color.textPrimary)
+
+                            HStack(spacing: 4) {
+                                Text("Check")
+                                    .font(.system(.subheadline))
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textSecondary)
+
+                                Link("GitHub repository", destination: URL(string: "https://github.com/mpospirit-apps/Repomance-iOS")!)
+                                    .font(.system(.subheadline))
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.appAccent)
+                            }
+                        }
                     }
 
-                    Text("GitHub's API requires user-level authentication to star repositories. Repomance requests only public_repo scope (the minimum permission needed to star on your behalf). Your token never touches private repositories or sensitive account data.")
-                        .font(.system(.subheadline))
-                        .fontWeight(.bold)
-                        .foregroundColor(Color.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .font(.system(.headline))
+                            .fontWeight(.heavy)
+                            .foregroundColor(Color.textPrimary)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Why Repomance needs public repository access")
+                                .font(.system(.headline))
+                                .fontWeight(.heavy)
+                                .foregroundColor(Color.textPrimary)
+
+                            Text("GitHub requires authentication to star repositories. Repomance only requests public_repo access - the minimum permission needed to star on your behalf.")
+                                .font(.system(.subheadline))
+                                .fontWeight(.bold)
+                                .foregroundColor(Color.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.appBackgroundLight)
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThick)
-                )
-                .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
                 .padding(.horizontal, 32)
                 }
                 .padding(.horizontal, 32)
