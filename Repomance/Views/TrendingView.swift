@@ -103,9 +103,15 @@ struct TrendingView: View {
                                     ) { success in
                                         if success {
                                             print("✅ [TrendingView] Pass interaction recorded successfully for repo \(repository.id)")
+                                            DispatchQueue.main.async {
+                                                // Remove the interacted repo from the list and save updated cache
+                                                self.trendingManager.removeCurrentRepo()
+                                                // Load next repo (now at the same index since we removed current)
+                                                self.loadCurrentRepository()
+                                            }
                                         } else {
                                             print("⚠️ [TrendingView] Failed to record Pass interaction for repo \(repository.id)")
-                                            // Show warning toast to user
+                                            // Show warning toast to user and still move to next repo
                                             DispatchQueue.main.async {
                                                 self.toastMessage = "Warning: Interaction not saved"
                                                 self.toastColor = .orange
@@ -113,14 +119,16 @@ struct TrendingView: View {
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                                     self.showToast = false
                                                 }
+                                                // Still load next repo even if recording failed
+                                                self.loadNextRepository()
                                             }
                                         }
                                     }
                                 } else {
                                     print("⚠️ [TrendingView] Cannot record Pass interaction - username is nil")
+                                    // No username, just move to next repo
+                                    loadNextRepository()
                                 }
-
-                                loadNextRepository()
                             },
                             onSwipeRight: {
                                 if rizzSoundEnabled {
@@ -143,6 +151,8 @@ struct TrendingView: View {
                                             self.showToast = false
                                         }
 
+                                        starred += 1
+
                                         // Record Star interaction only if GitHub star succeeded
                                         if let username = authManager.username {
                                             print("📝 [TrendingView] Recording Star interaction for repo \(repository.id)")
@@ -153,9 +163,15 @@ struct TrendingView: View {
                                             ) { success in
                                                 if success {
                                                     print("✅ [TrendingView] Star interaction recorded successfully for repo \(repository.id)")
+                                                    DispatchQueue.main.async {
+                                                        // Remove the interacted repo from the list and save updated cache
+                                                        self.trendingManager.removeCurrentRepo()
+                                                        // Load next repo (now at the same index since we removed current)
+                                                        self.loadCurrentRepository()
+                                                    }
                                                 } else {
                                                     print("⚠️ [TrendingView] Failed to record Star interaction for repo \(repository.id)")
-                                                    // Show warning toast to user
+                                                    // Show warning toast to user and still move to next repo
                                                     DispatchQueue.main.async {
                                                         self.toastMessage = "Starred, but interaction not saved"
                                                         self.toastColor = .orange
@@ -163,15 +179,16 @@ struct TrendingView: View {
                                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                                             self.showToast = false
                                                         }
+                                                        // Still load next repo even if recording failed
+                                                        self.loadNextRepository()
                                                     }
                                                 }
                                             }
                                         } else {
                                             print("⚠️ [TrendingView] Cannot record Star interaction - username is nil")
+                                            // No username, just move to next repo
+                                            loadNextRepository()
                                         }
-
-                                        starred += 1
-                                        loadNextRepository()
                                     } else {
                                         // Show error if star failed
                                         self.toastMessage = "Failed to star repository"
@@ -249,7 +266,7 @@ struct TrendingView: View {
     private func checkConnectionAndInitialize() {
         print("🔌 [TrendingView] checkConnectionAndInitialize called")
         print("🔌 [TrendingView] Network connected: \(networkMonitor.isConnected)")
-        
+
         if !networkMonitor.isConnected {
             print("⚠️ [TrendingView] No connection, showing no connection view")
             showNoConnection = true
@@ -260,8 +277,27 @@ struct TrendingView: View {
 
         // Load from cache or fetch new
         if trendingManager.hasRepos {
-            print("📦 [TrendingView] TrendingManager has repos (\(trendingManager.remainingCount) remaining), loading from cache")
-            loadFromCache()
+            print("📦 [TrendingView] TrendingManager has repos (\(trendingManager.remainingCount) remaining), re-filtering cache against latest interactions")
+
+            guard let username = authManager.username else {
+                print("❌ [TrendingView] No username, cannot re-filter cache")
+                loadFromCache()
+                return
+            }
+
+            // Re-filter cached repos against latest user interactions to ensure no previously interacted repos are shown
+            isLoading = true
+            trendingManager.refilterCachedRepos(username: username) { remainingCount in
+                DispatchQueue.main.async {
+                    if remainingCount > 0 {
+                        print("✅ [TrendingView] Re-filter complete, \(remainingCount) repos remaining, loading from cache")
+                        self.loadFromCache()
+                    } else {
+                        print("⚠️ [TrendingView] No repos remaining after re-filter, fetching fresh trending repos")
+                        self.loadTrendingRepos()
+                    }
+                }
+            }
         } else {
             print("🔄 [TrendingView] TrendingManager has no repos, auto-fetching trending repos")
             loadTrendingRepos()
@@ -333,8 +369,9 @@ struct TrendingView: View {
         // Keep loading state while saving repo
         isLoading = true
 
-        // Save trending repo to database first (required for interactions to work)
-        print("💾 [TrendingView] Saving trending repo to database before displaying...")
+        // Save trending repo to Repository table (required for interactions to work)
+        // Note: TrendingRepo table is separate - interactions link to Repository via github_id
+        print("💾 [TrendingView] Saving trending repo to Repository table before displaying...")
         apiService.saveTrendingRepo(
             githubId: enrichedRepo.githubId,
             owner: enrichedRepo.trending.author,
@@ -398,6 +435,18 @@ struct TrendingView: View {
 
     private func loadNextRepository() {
         trendingManager.moveToNextRepo()
+        swipeProgress = 0 // Reset swipe progress for new card
+
+        if trendingManager.hasRepos {
+            loadFromCache()
+        } else {
+            currentRepository = nil
+            errorMessage = "You've seen all trending repos!"
+        }
+    }
+
+    // Load current repository after removing the previous one
+    private func loadCurrentRepository() {
         swipeProgress = 0 // Reset swipe progress for new card
 
         if trendingManager.hasRepos {

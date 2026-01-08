@@ -44,92 +44,52 @@ class TrendingRepoManager: ObservableObject {
 
     func fetchTrending(
         username: String,
-        githubToken: String,
+        githubToken: String? = nil,  // No longer needed, kept for API compatibility
         completion: @escaping (Bool, String?) -> Void
     ) {
         print("🔍 [TrendingRepoManager] Starting fetchTrending for username: \(username)")
         print("🔍 [TrendingRepoManager] Filter language: \(filterLanguage ?? "nil"), period: \(filterPeriod.rawValue)")
-        
-        // Step 1: Fetch trending repos from API
-        apiService.fetchTrendingRepositories(
+
+        // Fetch uninteracted trending repos from backend (already filtered server-side)
+        apiService.fetchUninteractedTrendingRepos(
+            username: username,
+            batchSize: 30,
             language: filterLanguage,
-            since: filterPeriod,
-            token: githubToken
-        ) { [weak self] trendingRepos in
-            guard let self = self, let trendingRepos = trendingRepos else {
-                print("❌ [TrendingRepoManager] Failed to fetch trending repos from API")
+            period: filterPeriod
+        ) { [weak self] response in
+            guard let self = self else { return }
+
+            guard let response = response else {
+                print("❌ [TrendingRepoManager] Failed to fetch trending repos from backend")
                 completion(false, "Failed to fetch trending repos")
                 return
             }
 
-            print("✅ [TrendingRepoManager] Fetched \(trendingRepos.count) trending repos from API")
-            
-            if trendingRepos.isEmpty {
-                print("⚠️ [TrendingRepoManager] No trending repos returned from API")
-                DispatchQueue.main.async {
-                    self.trendingRepos = []
-                    self.currentIndex = 0
-                    self.saveCacheToStorage()
-                    completion(true, nil)
-                }
-                return
-            }
+            print("✅ [TrendingRepoManager] Fetched \(response.count) uninteracted trending repos from backend")
 
-            // Step 2: Enrich with GitHub IDs and filter interacted repos
-            print("🔄 [TrendingRepoManager] Starting enrichment process...")
-            self.enrichAndFilter(
-                trendingRepos: trendingRepos,
-                username: username,
-                githubToken: githubToken,
-                completion: completion
-            )
-        }
-    }
-
-    private func enrichAndFilter(
-        trendingRepos: [GitHubTrendingRepository],
-        username: String,
-        githubToken: String,
-        completion: @escaping (Bool, String?) -> Void
-    ) {
-        print("🔄 [TrendingRepoManager] Starting enrichAndFilter with \(trendingRepos.count) repos")
-
-        // Fetch user's interactions first for filtering
-        print("📥 [TrendingRepoManager] Fetching user interactions for username: \(username)")
-        apiService.fetchUserInteractions(username: username) { [weak self] interactedGithubIds in
-            guard let self = self else { return }
-
-            print("✅ [TrendingRepoManager] User has \(interactedGithubIds.count) interactions")
-            let interactedSet = Set(interactedGithubIds)
-
-            // Filter trending repos using GitHub IDs from search results
-            print("🔄 [TrendingRepoManager] Filtering trending repos (already have GitHub IDs from search)")
-            var enrichedRepos: [EnrichedTrendingRepo] = []
-
-            for (index, trending) in trendingRepos.enumerated() {
-                if let githubId = trending.githubId {
-                    print("📋 [TrendingRepoManager] [\(index+1)/\(trendingRepos.count)] Checking \(trending.author)/\(trending.name) - GitHub ID: \(githubId)")
-
-                    // Only add if not already interacted with
-                    if !interactedSet.contains(githubId) {
-                        let enriched = EnrichedTrendingRepo(
-                            trending: trending,
-                            githubId: githubId,
-                            fetchedAt: Date()
-                        )
-                        enrichedRepos.append(enriched)
-                        print("➕ [TrendingRepoManager] Added \(trending.author)/\(trending.name) to enriched list (total: \(enrichedRepos.count))")
-                    } else {
-                        print("⏭️ [TrendingRepoManager] [\(index+1)/\(trendingRepos.count)] Skipping \(trending.author)/\(trending.name) - already interacted")
-                    }
-                } else {
-                    print("⚠️ [TrendingRepoManager] [\(index+1)/\(trendingRepos.count)] No GitHub ID for \(trending.author)/\(trending.name)")
-                }
+            // Convert API response to EnrichedTrendingRepo objects
+            let enrichedRepos = response.repositories.map { apiRepo in
+                EnrichedTrendingRepo(
+                    trending: GitHubTrendingRepository(
+                        author: apiRepo.owner,
+                        name: apiRepo.name,
+                        url: apiRepo.url ?? "",
+                        description: apiRepo.description,
+                        language: apiRepo.language,
+                        languageColor: nil,
+                        stars: apiRepo.stars,
+                        forks: apiRepo.forks,
+                        currentPeriodStars: 0,
+                        builtBy: nil,
+                        githubId: apiRepo.github_id
+                    ),
+                    githubId: apiRepo.github_id,
+                    fetchedAt: Date()
+                )
             }
 
             DispatchQueue.main.async {
-                print("🎯 [TrendingRepoManager] Filtering complete! Final count: \(enrichedRepos.count) repos")
-                self.trendingRepos = enrichedRepos.sorted { $0.trending.stars > $1.trending.stars }
+                self.trendingRepos = enrichedRepos
                 self.currentIndex = 0
                 self.saveCacheToStorage()
                 print("💾 [TrendingRepoManager] Saved \(self.trendingRepos.count) repos to cache")
@@ -170,6 +130,24 @@ class TrendingRepoManager: ObservableObject {
         print("✅ [TrendingRepoManager] Moved to index: \(currentIndex), remaining: \(remainingCount)")
     }
 
+    // Remove current repo from the list (used after successful interactions)
+    func removeCurrentRepo() {
+        print("🗑️ [TrendingRepoManager] removeCurrentRepo called - current index: \(currentIndex), total: \(trendingRepos.count)")
+        guard currentIndex < trendingRepos.count else {
+            print("❌ [TrendingRepoManager] Cannot remove - index out of bounds")
+            return
+        }
+
+        let removedRepo = trendingRepos[currentIndex]
+        print("🗑️ [TrendingRepoManager] Removing repo at index \(currentIndex): \(removedRepo.trending.author)/\(removedRepo.trending.name)")
+
+        trendingRepos.remove(at: currentIndex)
+        print("✅ [TrendingRepoManager] Removed repo. New total: \(trendingRepos.count), current index stays at: \(currentIndex)")
+
+        // Save updated cache
+        saveCacheToStorage()
+    }
+
     func reset() {
         currentIndex = 0
         trendingRepos = []
@@ -197,12 +175,17 @@ class TrendingRepoManager: ObservableObject {
 
         if let encoded = try? JSONEncoder().encode(batch) {
             UserDefaults.standard.set(encoded, forKey: cacheKey)
+            // Force synchronize to ensure data is written to disk immediately
+            UserDefaults.standard.synchronize()
+            print("💾 [TrendingRepoManager] Cache saved and synchronized - \(trendingRepos.count) repos")
+        } else {
+            print("❌ [TrendingRepoManager] Failed to encode cache")
         }
     }
 
     private func loadCacheFromStorage() {
         print("💾 [TrendingRepoManager] Attempting to load cache from storage")
-        
+
         guard let data = UserDefaults.standard.data(forKey: cacheKey),
               let batch = try? JSONDecoder().decode(CachedTrendingBatch.self, from: data) else {
             print("⚠️ [TrendingRepoManager] No cache found or failed to decode")
@@ -210,11 +193,11 @@ class TrendingRepoManager: ObservableObject {
         }
 
         print("📦 [TrendingRepoManager] Cache found with \(batch.repositories.count) repos, cached at \(batch.cachedAt)")
-        
+
         // Check cache expiration (1 hour)
         let hoursSinceCached = Date().timeIntervalSince(batch.cachedAt) / 3600
         print("⏰ [TrendingRepoManager] Cache age: \(String(format: "%.2f", hoursSinceCached)) hours (max: \(cacheExpirationHours))")
-        
+
         guard hoursSinceCached < cacheExpirationHours else {
             print("❌ [TrendingRepoManager] Cache expired, clearing...")
             clearCache()
@@ -224,23 +207,44 @@ class TrendingRepoManager: ObservableObject {
         // Check if filters match
         print("🔍 [TrendingRepoManager] Comparing filters - cached language: \(batch.filterLanguage ?? "nil"), current: \(filterLanguage ?? "nil")")
         print("🔍 [TrendingRepoManager] Comparing filters - cached period: \(batch.filterPeriod.rawValue), current: \(filterPeriod.rawValue)")
-        
+
         guard batch.filterLanguage == filterLanguage && batch.filterPeriod == filterPeriod else {
             print("❌ [TrendingRepoManager] Filters don't match, clearing cache...")
             clearCache()
             return
         }
 
-        // Load cache
+        // Load cache - but note that repos should already be filtered
+        // (they were filtered during initial fetch and updated as user interacted)
         print("✅ [TrendingRepoManager] Loading cache with \(batch.repositories.count) repos, index: \(batch.currentIndex)")
         DispatchQueue.main.async {
             self.trendingRepos = batch.repositories
             self.currentIndex = batch.currentIndex
-            print("✅ [TrendingRepoManager] Cache loaded successfully on main thread")
+            print("✅ [TrendingRepoManager] Cache loaded successfully on main thread - \(self.trendingRepos.count) repos at index \(self.currentIndex)")
+        }
+    }
+
+    // Re-filter cached repos against latest user interactions (called on app launch)
+    // Since backend handles filtering, this now just validates cache and returns count
+    func refilterCachedRepos(username: String, completion: @escaping (Int) -> Void) {
+        print("🔄 [TrendingRepoManager] Validating \(trendingRepos.count) cached repos")
+
+        // With backend filtering, we trust the cache if it's valid
+        // The cache is already filtered when fetched from backend
+        // Just return the current count - if user wants fresh data, they can pull to refresh
+        DispatchQueue.main.async {
+            // Reset index if it's out of bounds
+            if self.currentIndex >= self.trendingRepos.count && self.trendingRepos.count > 0 {
+                self.currentIndex = 0
+            }
+
+            print("✅ [TrendingRepoManager] Cache validation complete. \(self.trendingRepos.count) repos available")
+            completion(self.trendingRepos.count)
         }
     }
 
     func clearCache() {
+        print("🗑️ [TrendingRepoManager] Clearing cache")
         UserDefaults.standard.removeObject(forKey: cacheKey)
         DispatchQueue.main.async {
             self.trendingRepos = []

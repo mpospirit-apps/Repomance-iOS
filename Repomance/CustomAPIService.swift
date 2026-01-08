@@ -79,6 +79,32 @@ struct UserInteractionsResponse: Codable, Sendable {
     let interacted_at: String
 }
 
+// MARK: - Trending Uninteracted Response Models
+
+struct TrendingRepoAPIResponse: Codable, Sendable {
+    let github_id: Int
+    let owner: String
+    let name: String
+    let description: String?
+    let language: String?
+    let stars: Int
+    let forks: Int
+    let url: String?
+}
+
+struct TrendingFiltersResponse: Codable, Sendable {
+    let language: String?
+    let period: String
+}
+
+struct UninteractedTrendingReposResponse: Codable, Sendable {
+    let username: String
+    let batch_size: Int
+    let filters: TrendingFiltersResponse
+    let count: Int
+    let repositories: [TrendingRepoAPIResponse]
+}
+
 struct UserStats: Sendable {
     let totalInteractions: Int
     let starsCount: Int
@@ -671,7 +697,92 @@ class CustomAPIService: ObservableObject {
             }
         }.resume()
     }
-    
+
+    // MARK: - Trending Uninteracted Repos
+
+    func fetchUninteractedTrendingRepos(
+        username: String,
+        batchSize: Int = 30,
+        language: String? = nil,
+        period: TrendingPeriod = .weekly,
+        completion: @escaping @Sendable (UninteractedTrendingReposResponse?) -> Void
+    ) {
+        print("🌐 [CustomAPIService] Fetching uninteracted trending repos - username: \(username), language: \(language ?? "nil"), period: \(period.rawValue)")
+
+        var components = URLComponents(string: "\(baseURL)repos/trending/uninteracted/")!
+        var queryItems = [
+            URLQueryItem(name: "username", value: username),
+            URLQueryItem(name: "batch_size", value: String(batchSize)),
+            URLQueryItem(name: "period", value: period.rawValue)
+        ]
+
+        if let language = language {
+            queryItems.append(URLQueryItem(name: "language", value: language))
+        }
+
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            print("❌ [CustomAPIService] Invalid URL for trending uninteracted repos")
+            completion(nil)
+            return
+        }
+
+        print("🌐 [CustomAPIService] Request URL: \(url.absoluteString)")
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ [CustomAPIService] Network error fetching trending: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] Trending API response status: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("⚠️ [CustomAPIService] Non-200 status code: \(httpResponse.statusCode)")
+                    DispatchQueue.main.async {
+                        completion(nil)
+                    }
+                    return
+                }
+            }
+
+            guard let data = data else {
+                print("❌ [CustomAPIService] No data received from trending API")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            print("📦 [CustomAPIService] Received \(data.count) bytes from trending API")
+
+            Task.detached {
+                do {
+                    let response = try self.decode(type: UninteractedTrendingReposResponse.self, from: data)
+                    print("✅ [CustomAPIService] Successfully decoded \(response.count) trending repos")
+                    await MainActor.run {
+                        completion(response)
+                    }
+                } catch {
+                    print("❌ [CustomAPIService] Failed to decode trending response: \(error)")
+                    await MainActor.run {
+                        completion(nil)
+                    }
+                }
+            }
+        }.resume()
+    }
+
     func fetchCategories(completion: @escaping @Sendable ([String]) -> Void) {
         let urlString = "\(baseURL)repos/categories/"
         guard let url = URL(string: urlString) else {
