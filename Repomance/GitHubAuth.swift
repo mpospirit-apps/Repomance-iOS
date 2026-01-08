@@ -25,6 +25,23 @@ class GitHubAuthManager: ObservableObject {
     // OAuth URLs
     private let authURL = Config.githubAuthUrl
     private let tokenURL = Config.githubTokenUrl
+
+    init() {
+        // Listen for token invalidation notifications
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleTokenInvalidated),
+            name: NSNotification.Name("TokenInvalidated"),
+            object: nil
+        )
+    }
+
+    @objc private func handleTokenInvalidated() {
+        print("🔐 [GitHubAuth] Token invalidated notification received - logging out")
+        DispatchQueue.main.async {
+            self.logout()
+        }
+    }
     
     func startOAuthFlow() {
         // Construct authorization URL
@@ -121,13 +138,16 @@ class GitHubAuthManager: ObservableObject {
             }
 
             DispatchQueue.main.async {
+                print("🔐 [GitHubAuth] Received API token from backend (length: \(apiToken.count))")
                 // Store the user API token securely in Keychain
-                KeychainHelper.shared.saveAPIToken(apiToken)
+                let saved = KeychainHelper.shared.saveAPIToken(apiToken)
+                print(saved ? "✅ [GitHubAuth] API token saved to keychain successfully" : "❌ [GitHubAuth] Failed to save API token to keychain")
 
                 self.userApiToken = apiToken
                 self.username = username
                 self.userId = userId
                 self.isAuthenticated = true
+                print("✅ [GitHubAuth] Set isAuthenticated = true, username: \(username), userId: \(userId)")
 
                 // Persist username and userId for session restoration
                 UserDefaults.standard.set(username, forKey: "github_username")
@@ -163,14 +183,17 @@ class GitHubAuthManager: ObservableObject {
     }
     
     func loadToken() {
+        print("🔑 [GitHubAuth] loadToken() called")
         // Try to load the user API token from Keychain first
         if let apiToken = KeychainHelper.shared.getAPIToken() {
+            print("✅ [GitHubAuth] Found API token in keychain (length: \(apiToken.count))")
             userApiToken = apiToken
             isAuthenticated = true
 
             // Restore username and userId from UserDefaults
             username = UserDefaults.standard.string(forKey: "github_username")
             userId = UserDefaults.standard.integer(forKey: "user_id")
+            print("✅ [GitHubAuth] Restored username: \(username ?? "nil"), userId: \(userId ?? 0)")
 
             // Also try to load GitHub token if available
             if let githubToken = UserDefaults.standard.string(forKey: "github_access_token") {
@@ -178,9 +201,12 @@ class GitHubAuthManager: ObservableObject {
                 fetchUserInfo()
             }
         } else if let githubToken = UserDefaults.standard.string(forKey: "github_access_token") {
+            print("⚠️ [GitHubAuth] No API token in keychain, but found GitHub token - exchanging...")
             // Fallback: if we have a GitHub token but no API token, exchange it
             accessToken = githubToken
             exchangeGitHubTokenForAPIToken(githubToken: githubToken)
+        } else {
+            print("❌ [GitHubAuth] No API token or GitHub token found - user needs to authenticate")
         }
     }
     

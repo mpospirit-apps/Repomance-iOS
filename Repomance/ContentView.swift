@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     @State private var skipAuth = false
-    @State private var selectedView: ViewType = .curated
+    @State private var selectedView: ViewType = .trending
 
     enum ViewType {
         case curated

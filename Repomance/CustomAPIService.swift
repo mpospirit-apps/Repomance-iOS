@@ -668,7 +668,15 @@ class CustomAPIService: ObservableObject {
             }
 
             if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode != 200 {
+                if httpResponse.statusCode == 401 {
+                    print("🔐 [CustomAPIService] 401 Unauthorized on curated repos - token is invalid, clearing keychain")
+                    KeychainHelper.shared.deleteAPIToken()
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: NSNotification.Name("TokenInvalidated"), object: nil)
+                        completion(nil)
+                    }
+                    return
+                } else if httpResponse.statusCode != 200 {
                     DispatchQueue.main.async {
                         completion(nil)
                     }
@@ -734,6 +742,9 @@ class CustomAPIService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let token = apiToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔐 [CustomAPIService] Using API token for authentication (length: \(token.count))")
+        } else {
+            print("⚠️ [CustomAPIService] No API token available for trending uninteracted repos")
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -747,7 +758,17 @@ class CustomAPIService: ObservableObject {
 
             if let httpResponse = response as? HTTPURLResponse {
                 print("📡 [CustomAPIService] Trending API response status: \(httpResponse.statusCode)")
-                if httpResponse.statusCode != 200 {
+                if httpResponse.statusCode == 401 {
+                    print("🔐 [CustomAPIService] 401 Unauthorized - token is invalid, clearing keychain")
+                    // Clear invalid token from keychain
+                    KeychainHelper.shared.deleteAPIToken()
+                    // Post notification to trigger logout/re-auth
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: NSNotification.Name("TokenInvalidated"), object: nil)
+                        completion(nil)
+                    }
+                    return
+                } else if httpResponse.statusCode != 200 {
                     print("⚠️ [CustomAPIService] Non-200 status code: \(httpResponse.statusCode)")
                     DispatchQueue.main.async {
                         completion(nil)
