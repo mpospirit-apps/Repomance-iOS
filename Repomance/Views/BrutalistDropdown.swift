@@ -49,15 +49,15 @@ struct BrutalistDropdown: View {
             // Dropdown menu overlay - doesn't affect layout
             if isExpanded {
                 VStack(spacing: 0) {
-                    // Curated option
+                    // Trending option
                     DropdownMenuItem(
-                        title: "CURATED",
-                        icon: "Logo",
-                        isSystemIcon: false,
-                        isSelected: selectedView == .curated,
+                        title: "TRENDING",
+                        icon: "chart.line.uptrend.xyaxis",
+                        isSystemIcon: true,
+                        isSelected: selectedView == .trending,
                         action: {
                             withAnimation(.easeOut(duration: 0.2)) {
-                                selectedView = .curated
+                                selectedView = .trending
                                 isExpanded = false
                             }
                         }
@@ -68,15 +68,15 @@ struct BrutalistDropdown: View {
                         .fill(Color.brutalistBorder)
                         .frame(height: BrutalistStyle.borderThin)
 
-                    // Trending option
+                    // Curated option
                     DropdownMenuItem(
-                        title: "TRENDING",
-                        icon: "chart.line.uptrend.xyaxis",
-                        isSystemIcon: true,
-                        isSelected: selectedView == .trending,
+                        title: "CURATED",
+                        icon: "Logo",
+                        isSystemIcon: false,
+                        isSelected: selectedView == .curated,
                         action: {
                             withAnimation(.easeOut(duration: 0.2)) {
-                                selectedView = .trending
+                                selectedView = .curated
                                 isExpanded = false
                             }
                         }

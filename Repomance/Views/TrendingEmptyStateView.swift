@@ -19,7 +19,7 @@ struct TrendingEmptyStateView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 64, height: 64)
-                .foregroundColor(errorMessage != nil ? .yellow : (Color.appAccent))
+                .foregroundColor(Color.appAccent)
 
             VStack(spacing: 8) {
                 Text(errorMessage != nil ? "No Trending Repos Found" : "Ready for Trending Repos")

@@ -62,29 +62,8 @@ struct RepositoryCard: View {
                     .lineLimit(2)
                     .truncationMode(.tail)
 
-                // Stats Row: Watchers, Forks, Stars
+                // Stats Row: Forks, Stars
                 HStack(spacing: 8) {
-                    // Watchers
-                    HStack(spacing: 6) {
-                        Image(.eye)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .foregroundColor(Color.textPrimary)
-                        Text(formatCount(repository.watcherCount))
-                            .font(.system(.headline))
-                            .fontWeight(.heavy)
-                            .foregroundColor(Color.textPrimary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.appBackgroundLighter)
-                    .overlay(
-                        Rectangle()
-                            .strokeBorder(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThin)
-                    )
-
                     // Forks
                     HStack(spacing: 6) {
                         Image(.fork)
@@ -128,48 +107,60 @@ struct RepositoryCard: View {
                     )
                 }
 
-                // Language distribution bar
+                // Language display
                 if !languages.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        // Language bar
-                        GeometryReader { geometry in
-                            HStack(spacing: 0) {
-                                ForEach(languages) { language in
-                                    Rectangle()
-                                        .fill(Color(hex: language.color))
-                                        .frame(width: geometry.size.width * CGFloat(language.percentage / 100))
-                                }
-                            }
+                    // For trending repos (no category), show simple language text with color
+                    if repository.category == nil {
+                        HStack(spacing: 6) {
+                            Text(languages.first?.name ?? "")
+                                .font(.system(.subheadline))
+                                .fontWeight(.bold)
+                                .foregroundColor(Color(hex: languages.first?.color ?? "#000000"))
                         }
-                        .frame(height: 8)
-                        .overlay(
-                            Rectangle()
-                                .strokeBorder(Color.brutalistBorder, lineWidth: 1)
-                        )
-
-                        // Language labels - horizontally scrollable
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(languages) { language in
-                                    HStack(spacing: 4) {
+                        .padding(.top, 4)
+                    } else {
+                        // For curated repos, show full language distribution
+                        VStack(alignment: .leading, spacing: 8) {
+                            // Language bar
+                            GeometryReader { geometry in
+                                HStack(spacing: 0) {
+                                    ForEach(languages) { language in
                                         Rectangle()
                                             .fill(Color(hex: language.color))
-                                            .frame(width: 10, height: 10)
-                                        Text(language.name)
-                                            .font(.system(.caption2))
-                                            .fontWeight(.bold)
-                                            .foregroundColor(Color.textSecondary)
-                                        Text(String(format: "%.1f%%", language.percentage))
-                                            .font(.system(.caption2))
-                                            .fontWeight(.bold)
-                                            .foregroundColor((Color.appAccent).opacity(0.8))
+                                            .frame(width: geometry.size.width * CGFloat(language.percentage / 100))
                                     }
                                 }
                             }
-                            .padding(.trailing, 20)
+                            .frame(height: 8)
+                            .overlay(
+                                Rectangle()
+                                    .strokeBorder(Color.brutalistBorder, lineWidth: 1)
+                            )
+
+                            // Language labels - horizontally scrollable
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(languages) { language in
+                                        HStack(spacing: 4) {
+                                            Rectangle()
+                                                .fill(Color(hex: language.color))
+                                                .frame(width: 10, height: 10)
+                                            Text(language.name)
+                                                .font(.system(.caption2))
+                                                .fontWeight(.bold)
+                                                .foregroundColor(Color.textSecondary)
+                                            Text(String(format: "%.1f%%", language.percentage))
+                                                .font(.system(.caption2))
+                                                .fontWeight(.bold)
+                                                .foregroundColor((Color.appAccent).opacity(0.8))
+                                        }
+                                    }
+                                }
+                                .padding(.trailing, 20)
+                            }
                         }
+                        .padding(.top, 4)
                     }
-                    .padding(.top, 4)
                 }
             }
             .padding(20)
