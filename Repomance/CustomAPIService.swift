@@ -1397,6 +1397,79 @@ class CustomAPIService: ObservableObject {
             }
         }.resume()
     }
+
+    // MARK: - Account Deletion
+
+    /// Delete the user's account permanently
+    /// - Parameters:
+    ///   - userId: The user's ID to delete
+    ///   - completion: Callback with success status and optional error message
+    func deleteAccount(userId: Int, completion: @escaping @Sendable (Bool, String?) -> Void) {
+        let urlString = "\(baseURL)users/\(userId)/"
+        guard let url = URL(string: urlString) else {
+            completion(false, "Invalid URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔐 [CustomAPIService] Deleting account for user \(userId)")
+        } else {
+            print("❌ [CustomAPIService] No authentication token for account deletion")
+            completion(false, "No authentication token")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ [CustomAPIService] Network error during account deletion: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    completion(false, "Network error: \(error.localizedDescription)")
+                }
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 [CustomAPIService] Delete account response status: \(httpResponse.statusCode)")
+
+                switch httpResponse.statusCode {
+                case 204, 200:
+                    print("✅ [CustomAPIService] Account deleted successfully")
+                    DispatchQueue.main.async {
+                        completion(true, nil)
+                    }
+                case 401:
+                    print("❌ [CustomAPIService] 401 Unauthorized - token invalid")
+                    DispatchQueue.main.async {
+                        completion(false, "Authentication failed")
+                    }
+                case 403:
+                    print("❌ [CustomAPIService] 403 Forbidden - permission denied")
+                    DispatchQueue.main.async {
+                        completion(false, "Permission denied")
+                    }
+                case 404:
+                    // Account already deleted - treat as success
+                    print("⚠️ [CustomAPIService] 404 Not Found - account may already be deleted")
+                    DispatchQueue.main.async {
+                        completion(true, nil)
+                    }
+                default:
+                    print("❌ [CustomAPIService] Failed to delete account - status \(httpResponse.statusCode)")
+                    if let data = data, let responseBody = String(data: data, encoding: .utf8) {
+                        print("📄 [CustomAPIService] Response body: \(responseBody)")
+                    }
+                    DispatchQueue.main.async {
+                        completion(false, "Failed to delete account")
+                    }
+                }
+            }
+        }.resume()
+    }
 }
 
 // MARK: - GitHub Search API Models
