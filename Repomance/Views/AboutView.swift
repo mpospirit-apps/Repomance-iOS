@@ -187,80 +187,6 @@ struct AboutView: View {
                             .padding(.vertical, 8)
                         }
 
-                        Divider()
-                            .background(Color.textSecondary.opacity(0.3))
-                            .padding(.vertical, 8)
-
-                        // Links Section
-                        HStack(spacing: 8) {
-                            Button(action: {
-                                openURL(URL(string: "https://repomance.com/privacy")!)
-                            }) {
-                                Text("Privacy Policy")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textSecondary)
-                            }
-
-                            Text("|")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.textSecondary.opacity(0.5))
-
-                            Button(action: {
-                                openURL(URL(string: "https://repomance.com/license")!)
-                            }) {
-                                Text("License")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textSecondary)
-                            }
-
-                            Text("|")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.textSecondary.opacity(0.5))
-
-                            Button(action: {
-                                openURL(URL(string: "https://repomance.com/support")!)
-                            }) {
-                                Text("Support")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textSecondary)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-
-                        // About Section
-                        VStack(alignment: .center, spacing: 4) {
-                            HStack(spacing: 4) {
-                                Text("Made with")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textPrimary)
-                                Image(systemName: "heart.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 14, height: 14)
-                                    .foregroundColor(Color.appAccent)
-                                Text("by")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.textPrimary)
-                            }
-                            Button(action: {
-                                openURL(URL(string: "https://www.cagrigokpunar.com")!)
-                            }) {
-                                Text("Çağrı \"mpospirit\" Gökpunar")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(Color.appAccent)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-
                         Spacer()
                     }
                     .padding(.horizontal, 16)
@@ -276,7 +202,7 @@ struct AboutView: View {
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 8) {
                         BrutalistDragIndicator()
-                        Text("REPOMANCE")
+                        Text("STATISTICS")
                             .font(.system(.headline))
                             .fontWeight(.black)
                             .textCase(.uppercase)

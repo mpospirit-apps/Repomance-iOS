@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SafariServices
 
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
@@ -207,7 +208,81 @@ struct SettingsView: View {
                             )
                             .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
                         }
-                        
+
+                        Divider()
+                            .background(Color.textSecondary.opacity(0.3))
+                            .padding(.vertical, 8)
+
+                        // Links Section
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                openURL(URL(string: "https://repomance.com/privacy")!)
+                            }) {
+                                Text("Privacy Policy")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textSecondary)
+                            }
+
+                            Text("|")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(Color.textSecondary.opacity(0.5))
+
+                            Button(action: {
+                                openURL(URL(string: "https://repomance.com/license")!)
+                            }) {
+                                Text("License")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textSecondary)
+                            }
+
+                            Text("|")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(Color.textSecondary.opacity(0.5))
+
+                            Button(action: {
+                                openURL(URL(string: "https://repomance.com/support")!)
+                            }) {
+                                Text("Support")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textSecondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+
+                        // About Section
+                        VStack(alignment: .center, spacing: 4) {
+                            HStack(spacing: 4) {
+                                Text("Made with")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textPrimary)
+                                Image(systemName: "heart.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 14, height: 14)
+                                    .foregroundColor(Color.appAccent)
+                                Text("by")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.textPrimary)
+                            }
+                            Button(action: {
+                                openURL(URL(string: "https://www.cagrigokpunar.com")!)
+                            }) {
+                                Text("Çağrı \"mpospirit\" Gökpunar")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.appAccent)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+
                         Spacer()
                     }
                     .padding(.horizontal, 16)
@@ -290,6 +365,21 @@ struct SettingsView: View {
         case .light: return "sun.max.fill"
         case .dark: return "moon.fill"
         case .system: return "circle.lefthalf.filled"
+        }
+    }
+
+    private func openURL(_ url: URL) {
+        DispatchQueue.main.async {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                var topController = window.rootViewController
+                while let presented = topController?.presentedViewController {
+                    topController = presented
+                }
+
+                let safariVC = SFSafariViewController(url: url)
+                topController?.present(safariVC, animated: true)
+            }
         }
     }
 }
