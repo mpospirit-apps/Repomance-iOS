@@ -10,7 +10,7 @@ import SwiftUI
 struct AnnouncementsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var announcementManager = AnnouncementManager.shared
+    @EnvironmentObject var announcementManager: AnnouncementManager
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
 
     @State private var isLoading = true
@@ -291,4 +291,5 @@ struct AnnouncementCard: View {
 #Preview {
     AnnouncementsView()
         .environmentObject(ThemeManager())
+        .environmentObject(AnnouncementManager.shared)
 }

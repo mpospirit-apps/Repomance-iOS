@@ -13,7 +13,7 @@ struct SwipeView: View {
     private let apiService = CustomAPIService.shared
     @StateObject private var repoCache = RepoCache.shared
     @StateObject private var networkMonitor = NetworkMonitor.shared
-    @StateObject private var announcementManager = AnnouncementManager.shared
+    @EnvironmentObject var announcementManager: AnnouncementManager
     @State private var currentRepository: Repository?
     @State private var currentLanguages: [LanguageInfo] = []
     @State private var currentReadme: String = ""

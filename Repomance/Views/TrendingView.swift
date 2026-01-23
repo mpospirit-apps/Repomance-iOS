@@ -12,7 +12,7 @@ struct TrendingView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     @StateObject private var trendingManager = TrendingRepoManager.shared
     @StateObject private var networkMonitor = NetworkMonitor.shared
-    @StateObject private var announcementManager = AnnouncementManager.shared
+    @EnvironmentObject var announcementManager: AnnouncementManager
     private let apiService = CustomAPIService.shared
 
     @State private var currentRepository: Repository?
