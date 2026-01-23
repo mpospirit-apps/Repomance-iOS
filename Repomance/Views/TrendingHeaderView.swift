@@ -10,12 +10,14 @@ import SwiftUI
 struct TrendingHeaderView: View {
     @Binding var selectedView: ContentView.ViewType
     let hasActiveFilters: Bool
+    let hasUnreadAnnouncements: Bool
     @Binding var showFilters: Bool
     @Binding var showSettings: Bool
+    @Binding var showAnnouncements: Bool
 
     var body: some View {
         ZStack {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 // Custom dropdown for view selection
                 BrutalistDropdown(
                     selectedView: $selectedView,
@@ -24,6 +26,33 @@ struct TrendingHeaderView: View {
                 )
 
                 Spacer()
+
+                // Announcements button
+                Button(action: {
+                    showAnnouncements.toggle()
+                }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(.megaphone)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(Color.textSecondary)
+
+                        // Badge indicator when there are unread announcements
+                        if hasUnreadAnnouncements {
+                            Rectangle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.brutalistBorder, lineWidth: 2)
+                                )
+                                .offset(x: 2, y: -2)
+                        }
+                    }
+                    .padding(10)
+                }
+                .buttonStyle(BrutalistIconButtonStyle(size: 44))
 
                 // Filter button
                 Button(action: {

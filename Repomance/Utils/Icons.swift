@@ -29,6 +29,8 @@ enum AppIcon: String {
     case alert = "icon-alert"
     case warning = "icon-warning"
     case wifiOff = "icon-wifi-off"
+    case bug = "icon-bug"
+    case flag = "icon-flag"
 
     // Content Types
     case document = "icon-document"
@@ -36,6 +38,7 @@ enum AppIcon: String {
     case code = "icon-code"
     case inbox = "icon-inbox"
     case search = "icon-search"
+    case megaphone = "icon-megaphone"
 
     // Repository Info
     case user = "icon-user"
@@ -50,6 +53,7 @@ enum AppIcon: String {
     case calendar = "icon-calendar"
     case meditation = "icon-meditation"
     case userCheck = "icon-user-check"
+    case gift = "icon-gift"
 
     // Statistics
     case handTap = "icon-hand-tap"

@@ -12,6 +12,7 @@ struct TrendingView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     @StateObject private var trendingManager = TrendingRepoManager.shared
     @StateObject private var networkMonitor = NetworkMonitor.shared
+    @StateObject private var announcementManager = AnnouncementManager.shared
     private let apiService = CustomAPIService.shared
 
     @State private var currentRepository: Repository?
@@ -21,6 +22,7 @@ struct TrendingView: View {
     @State private var starred = 0
     @State private var showFilters = false
     @State private var showSettings = false
+    @State private var showAnnouncements = false
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var toastMessage: String?
@@ -53,8 +55,10 @@ struct TrendingView: View {
                     TrendingHeaderView(
                         selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
+                        hasUnreadAnnouncements: announcementManager.hasUnread,
                         showFilters: $showFilters,
-                        showSettings: $showSettings
+                        showSettings: $showSettings,
+                        showAnnouncements: $showAnnouncements
                     )
 
                     // Card Stack
@@ -245,6 +249,10 @@ struct TrendingView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+                .presentationCornerRadius(0)
+        }
+        .sheet(isPresented: $showAnnouncements) {
+            AnnouncementsView()
                 .presentationCornerRadius(0)
         }
         .onAppear {

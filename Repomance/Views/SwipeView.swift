@@ -13,6 +13,7 @@ struct SwipeView: View {
     private let apiService = CustomAPIService.shared
     @StateObject private var repoCache = RepoCache.shared
     @StateObject private var networkMonitor = NetworkMonitor.shared
+    @StateObject private var announcementManager = AnnouncementManager.shared
     @State private var currentRepository: Repository?
     @State private var currentLanguages: [LanguageInfo] = []
     @State private var currentReadme: String = ""
@@ -24,6 +25,7 @@ struct SwipeView: View {
     @State private var showRateLimitInfo = false
     @State private var showFilters = false
     @State private var showBatchInfo = false
+    @State private var showAnnouncements = false
     @State private var isLoading = true
     @State private var isGeneratingBatch = false
     @State private var noReposFound = false
@@ -72,9 +74,11 @@ struct SwipeView: View {
                     SwipeHeaderView(
                         selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
+                        hasUnreadAnnouncements: announcementManager.hasUnread,
                         showAbout: $showAbout,
                         showFilters: $showFilters,
-                        showSettings: $showSettings
+                        showSettings: $showSettings,
+                        showAnnouncements: $showAnnouncements
                     )
 
                     // Card Stack
@@ -235,6 +239,10 @@ struct SwipeView: View {
         }
         .sheet(isPresented: $showBatchInfo) {
             BatchInfoView()
+                .presentationCornerRadius(0)
+        }
+        .sheet(isPresented: $showAnnouncements) {
+            AnnouncementsView()
                 .presentationCornerRadius(0)
         }
         .onChange(of: showFilters) { _, isShowing in

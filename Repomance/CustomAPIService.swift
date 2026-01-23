@@ -112,6 +112,27 @@ struct UserStats: Sendable {
     let dailyBatchCount: Int
 }
 
+// MARK: - Announcement Models
+
+struct APIAnnouncementType: Codable, Sendable {
+    let id: Int
+    let name: String
+    let display_name: String
+    let color: String
+    let icon: String
+}
+
+struct APIAnnouncement: Codable, Sendable, Identifiable {
+    let id: Int
+    let title: String
+    let content: String
+    let announcement_type: APIAnnouncementType
+    let priority: Int
+    let created_at: String
+    let updated_at: String
+    let is_read: Bool
+}
+
 struct AnyCodable: Codable, @unchecked Sendable {
     let value: Any
     
@@ -1468,6 +1489,58 @@ class CustomAPIService: ObservableObject {
                     }
                 }
             }
+        }.resume()
+    }
+
+    // MARK: - Announcements
+
+    func fetchAnnouncements(completion: @escaping @Sendable ([APIAnnouncement]?) -> Void) {
+        let urlString = "\(baseURL)announcements/"
+        guard let url = URL(string: urlString) else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+
+            Task.detached {
+                do {
+                    let announcements = try self.decode(type: [APIAnnouncement].self, from: data)
+                    await MainActor.run { completion(announcements) }
+                } catch {
+                    await MainActor.run { completion(nil) }
+                }
+            }
+        }.resume()
+    }
+
+    func markAnnouncementRead(announcementId: Int, completion: @escaping @Sendable (Bool) -> Void) {
+        let urlString = "\(baseURL)announcements/\(announcementId)/mark-read/"
+        guard let url = URL(string: urlString) else {
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let success = (response as? HTTPURLResponse)?.statusCode == 200
+            DispatchQueue.main.async { completion(success) }
         }.resume()
     }
 }
