@@ -14,6 +14,7 @@ struct TrendingHeaderView: View {
     @Binding var showFilters: Bool
     @Binding var showSettings: Bool
     @Binding var showAnnouncements: Bool
+    @Binding var showStatistics: Bool
 
     var body: some View {
         ZStack {
@@ -21,8 +22,7 @@ struct TrendingHeaderView: View {
                 // Custom dropdown for view selection
                 BrutalistDropdown(
                     selectedView: $selectedView,
-                    currentTitle: "TRENDING",
-                    currentIcon: "system:chart.line.uptrend.xyaxis"
+                    currentTitle: "TRENDING"
                 )
 
                 Spacer()
@@ -51,6 +51,17 @@ struct TrendingHeaderView: View {
                         }
                     }
                     .padding(10)
+                }
+                .buttonStyle(BrutalistIconButtonStyle(size: 44))
+
+                // Statistics button
+                Button(action: {
+                    showStatistics.toggle()
+                }) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color.textSecondary)
+                        .padding(10)
                 }
                 .buttonStyle(BrutalistIconButtonStyle(size: 44))
 

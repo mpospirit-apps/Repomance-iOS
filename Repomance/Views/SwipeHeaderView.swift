@@ -12,10 +12,10 @@ struct SwipeHeaderView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     let hasActiveFilters: Bool
     let hasUnreadAnnouncements: Bool
-    let showAbout: Binding<Bool>
     let showFilters: Binding<Bool>
     let showSettings: Binding<Bool>
     let showAnnouncements: Binding<Bool>
+    let showStatistics: Binding<Bool>
 
     var body: some View {
         ZStack {
@@ -23,8 +23,7 @@ struct SwipeHeaderView: View {
                 // Custom dropdown for view selection
                 BrutalistDropdown(
                     selectedView: $selectedView,
-                    currentTitle: "CURATED",
-                    currentIcon: "Logo"
+                    currentTitle: "CURATED"
                 )
 
                 Spacer()
@@ -53,6 +52,17 @@ struct SwipeHeaderView: View {
                         }
                     }
                     .padding(10)
+                }
+                .buttonStyle(BrutalistIconButtonStyle(size: 44))
+
+                // Statistics button
+                Button(action: {
+                    showStatistics.wrappedValue.toggle()
+                }) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color.textSecondary)
+                        .padding(10)
                 }
                 .buttonStyle(BrutalistIconButtonStyle(size: 44))
 

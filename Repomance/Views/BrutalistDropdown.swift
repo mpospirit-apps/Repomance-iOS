@@ -12,7 +12,6 @@ struct BrutalistDropdown: View {
     @State private var isExpanded = false
 
     let currentTitle: String
-    let currentIcon: String
 
     var body: some View {
         // Main button
@@ -22,27 +21,19 @@ struct BrutalistDropdown: View {
             }
         }) {
             HStack(spacing: 8) {
-                if currentIcon.starts(with: "system:") {
-                    Image(systemName: String(currentIcon.dropFirst(7)))
-                        .font(.system(size: 20, weight: .black))
-                        .foregroundColor(Color.appAccent)
-                } else {
-                    Image(currentIcon)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-
                 Text(currentTitle)
                     .font(.system(size: 24, weight: .black))
                     .textCase(.uppercase)
                     .foregroundColor(Color.appAccent)
+                    .lineLimit(1)
+                    .fixedSize()
 
                 Image(systemName: "chevron.down")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color.appAccent)
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
             }
+            .fixedSize()
         }
         .buttonStyle(PlainButtonStyle())
         .overlay(alignment: .topLeading) {
@@ -52,8 +43,6 @@ struct BrutalistDropdown: View {
                     // Trending option
                     DropdownMenuItem(
                         title: "TRENDING",
-                        icon: "chart.line.uptrend.xyaxis",
-                        isSystemIcon: true,
                         isSelected: selectedView == .trending,
                         action: {
                             withAnimation(.easeOut(duration: 0.2)) {
@@ -71,8 +60,6 @@ struct BrutalistDropdown: View {
                     // Curated option
                     DropdownMenuItem(
                         title: "CURATED",
-                        icon: "Logo",
-                        isSystemIcon: false,
                         isSelected: selectedView == .curated,
                         action: {
                             withAnimation(.easeOut(duration: 0.2)) {
@@ -105,8 +92,6 @@ struct BrutalistDropdown: View {
 
 struct DropdownMenuItem: View {
     let title: String
-    let icon: String
-    let isSystemIcon: Bool
     let isSelected: Bool
     let action: () -> Void
 
@@ -115,18 +100,6 @@ struct DropdownMenuItem: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                if isSystemIcon {
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .black))
-                        .foregroundColor(Color.appAccent)
-                        .frame(width: 24)
-                } else {
-                    Image(icon)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-
                 Text(title)
                     .font(.system(size: 18, weight: .black))
                     .textCase(.uppercase)

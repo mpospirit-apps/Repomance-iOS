@@ -21,7 +21,7 @@ struct SwipeView: View {
     @State private var dismissed = 0
     @State private var starred = 0
     @State private var showSettings = false
-    @State private var showAbout = false
+    @State private var showStatistics = false
     @State private var showRateLimitInfo = false
     @State private var showFilters = false
     @State private var showBatchInfo = false
@@ -75,10 +75,10 @@ struct SwipeView: View {
                         selectedView: $selectedView,
                         hasActiveFilters: hasActiveFilters,
                         hasUnreadAnnouncements: announcementManager.hasUnread,
-                        showAbout: $showAbout,
                         showFilters: $showFilters,
                         showSettings: $showSettings,
-                        showAnnouncements: $showAnnouncements
+                        showAnnouncements: $showAnnouncements,
+                        showStatistics: $showStatistics
                     )
 
                     // Card Stack
@@ -229,7 +229,7 @@ struct SwipeView: View {
             SettingsView()
                 .presentationCornerRadius(0)
         }
-        .sheet(isPresented: $showAbout) {
+        .sheet(isPresented: $showStatistics) {
             AboutView()
                 .presentationCornerRadius(0)
         }

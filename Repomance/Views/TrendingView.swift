@@ -23,6 +23,7 @@ struct TrendingView: View {
     @State private var showFilters = false
     @State private var showSettings = false
     @State private var showAnnouncements = false
+    @State private var showStatistics = false
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var toastMessage: String?
@@ -58,7 +59,8 @@ struct TrendingView: View {
                         hasUnreadAnnouncements: announcementManager.hasUnread,
                         showFilters: $showFilters,
                         showSettings: $showSettings,
-                        showAnnouncements: $showAnnouncements
+                        showAnnouncements: $showAnnouncements,
+                        showStatistics: $showStatistics
                     )
 
                     // Card Stack
@@ -253,6 +255,10 @@ struct TrendingView: View {
         }
         .sheet(isPresented: $showAnnouncements) {
             AnnouncementsView()
+                .presentationCornerRadius(0)
+        }
+        .sheet(isPresented: $showStatistics) {
+            AboutView()
                 .presentationCornerRadius(0)
         }
         .onAppear {
