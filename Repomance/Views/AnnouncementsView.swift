@@ -183,89 +183,62 @@ struct AnnouncementCard: View {
     }
 
     private var backgroundColor: Color {
-        announcement.is_read ? Color.textSecondary.opacity(0.1) : Color.appBackgroundLight
+        announcement.is_read ? Color.appBackgroundLighter : Color.appBackgroundLight
     }
 
     private var textColor: Color {
         announcement.is_read ? Color.textSecondary : Color.textPrimary
     }
 
-    private var typeIcon: AppIcon {
-        switch announcement.announcement_type.icon {
-        case "warning":
-            return .warning
-        case "star":
-            return .star
-        case "gift":
-            return .gift
-        case "bug":
-            return .bug
-        case "flag":
-            return .flag
-        case "megaphone":
-            return .megaphone
-        default:
-            return .megaphone
-        }
-    }
-
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 12) {
-                    // Header with type icon
-                    HStack(spacing: 8) {
-                        Image(typeIcon)
+                // Header with type
+                HStack(spacing: 8) {
+                    Text(announcement.announcement_type.display_name.uppercased())
+                        .font(.caption)
+                        .fontWeight(.black)
+                        .foregroundColor(typeColor)
+
+                    Spacer()
+
+                    Text(formatDate(announcement.created_at))
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color.textSecondary)
+
+                    // Read indicator
+                    if announcement.is_read {
+                        Image(.checkboxChecked)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .foregroundColor(typeColor)
-
-                        Text(announcement.announcement_type.display_name.uppercased())
-                            .font(.caption)
-                            .fontWeight(.black)
-                            .foregroundColor(typeColor)
-
-                        Spacer()
-
-                        Text(formatDate(announcement.created_at))
-                            .font(.caption)
-                            .fontWeight(.bold)
+                            .frame(width: 12, height: 12)
                             .foregroundColor(Color.textSecondary)
-
-                        // Read indicator
-                        if announcement.is_read {
-                            Image(.checkboxChecked)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 12, height: 12)
-                                .foregroundColor(Color.textSecondary)
-                        }
                     }
-
-                    // Title
-                    Text(announcement.title)
-                        .font(.headline)
-                        .fontWeight(.black)
-                        .foregroundColor(textColor)
-                        .multilineTextAlignment(.leading)
-
-                    // Content
-                    Text(announcement.content)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(textColor)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
                 }
-                .padding(16)
-                .background(
-                    Rectangle()
-                        .fill(backgroundColor)
-                )
-                .overlay(
-                    Rectangle()
-                        .stroke(typeColor, lineWidth: 3)
-                )
+
+                // Title
+                Text(announcement.title)
+                    .font(.headline)
+                    .fontWeight(.black)
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.leading)
+
+                // Content
+                Text(announcement.content)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundColor(textColor)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding(16)
+            .background(backgroundColor)
+            .overlay(
+                Rectangle()
+                    .stroke(typeColor, lineWidth: 3)
+            )
+            .modifier(BrutalistShadow(shadow: BrutalistStyle.Shadow(offsetX: 6, offsetY: 6, color: typeColor)))
         }
         .buttonStyle(PlainButtonStyle())
     }
