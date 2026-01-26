@@ -18,3 +18,9 @@ A mobile app for discovering and starring GitHub repositories through a dating a
 - **Statistics**: Check your dismissed and starred repository counts
 
 The app requires GitHub authentication to star repositories. No personal data is collected or stored beyond what's necessary for GitHub API interaction.
+
+## License
+
+This source code is made available for transparency and educational purposes. You may view and use the code for personal, non-commercial purposes. Commercial use, redistribution, or derivative works require explicit permission. See [LICENSE](LICENSE) for full terms.
+
+For the app's end-user license agreement, visit https://repomance.com/license
