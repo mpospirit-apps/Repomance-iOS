@@ -144,7 +144,9 @@ struct MarkdownWebView: UIViewRepresentable {
                         mangle: false
                     });
                     const base64Markdown = "\(base64Markdown)";
-                    const markdownText = atob(base64Markdown);
+                    const binary = atob(base64Markdown);
+                    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                    const markdownText = new TextDecoder('utf-8').decode(bytes);
                     document.getElementById('content').innerHTML = marked.parse(markdownText);
                 } catch (error) {
                     document.getElementById('content').innerText = 'Error rendering markdown: ' + error.message;
