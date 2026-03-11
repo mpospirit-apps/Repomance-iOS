@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
+    @EnvironmentObject var popupManager: PopupManager
     @State private var skipAuth = false
     @State private var selectedView: ViewType = .trending
 
@@ -25,6 +26,11 @@ struct ContentView: View {
                         SwipeView(selectedView: $selectedView)
                     } else {
                         TrendingView(selectedView: $selectedView)
+                    }
+
+                    // Popup overlay — shown when there are unread active popups
+                    if let popup = popupManager.popupQueue.first {
+                        PopupView(popup: popup)
                     }
                 }
             } else {

@@ -12,6 +12,7 @@ struct RepomanceApp: App {
     @StateObject private var authManager = GitHubAuthManager()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var announcementManager = AnnouncementManager.shared
+    @StateObject private var popupManager = PopupManager.shared
 
     var body: some Scene {
         WindowGroup {
@@ -19,6 +20,7 @@ struct RepomanceApp: App {
                 .environmentObject(authManager)
                 .environmentObject(themeManager)
                 .environmentObject(announcementManager)
+                .environmentObject(popupManager)
                 .preferredColorScheme(themeManager.colorScheme)
                 .onOpenURL { url in
                     authManager.handleCallback(url: url)
@@ -27,6 +29,7 @@ struct RepomanceApp: App {
                     authManager.loadToken()
                     // Check for unread announcements on app open
                     announcementManager.fetchAnnouncements()
+                    popupManager.fetchPopups()
                 }
         }
     }
