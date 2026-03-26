@@ -4,6 +4,8 @@
 
 A mobile app for discovering and starring GitHub repositories through a dating app like swipe interface.
 
+![Demo](demo.mp4)
+
 ## Installation
 
 Visit [App Store](https://apps.apple.com/app/repomance/id6756920720) to download and install the app on your iOS device.  
