@@ -4,7 +4,7 @@
 
 A mobile app for discovering and starring GitHub repositories through a dating app like swipe interface.
 
-![Demo](demo.mp4)
+![Demo](demo.gif)
 
 ## Installation
 
