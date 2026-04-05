@@ -14,9 +14,11 @@ struct SettingsView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @AppStorage("rizzSoundEnabled") private var rizzSoundEnabled = false
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
+    @AppStorage("followOnStar") private var followOnStar = false
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteErrorMessage: String?
+    @State private var showFollowScopeAlert = false
 
     var body: some View {
         NavigationView {
@@ -62,6 +64,30 @@ struct SettingsView: View {
                                             if hapticFeedbackEnabled {
                                                 let generator = UIImpactFeedbackGenerator(style: .medium)
                                                 generator.impactOccurred()
+                                            }
+                                        }
+                                }
+                                .padding(16)
+                                .background(Color.appBackgroundLight)
+
+                                Rectangle()
+                                    .fill(Color.brutalistBorder)
+                                    .frame(height: BrutalistStyle.borderThin)
+
+                                HStack {
+                                    Toggle("Follow on Star", isOn: $followOnStar)
+                                        .toggleStyle(BrutalistToggleStyle(accentColor: Color.appAccent))
+                                        .fontWeight(.bold)
+                                        .foregroundColor(Color.textPrimary)
+                                        .onChange(of: followOnStar) { _, newValue in
+                                            if hapticFeedbackEnabled {
+                                                let generator = UIImpactFeedbackGenerator(style: .medium)
+                                                generator.impactOccurred()
+                                            }
+                                            if newValue {
+                                                handleFollowOnStarEnabled()
+                                            } else {
+                                                CustomAPIService.shared.updateFollowOnStarSetting(enabled: false) { _ in }
                                             }
                                         }
                                 }
@@ -318,6 +344,22 @@ struct SettingsView: View {
                         onDelete: deleteAccount
                     )
                 }
+                if showFollowScopeAlert {
+                    BrutalistFollowScopeAlert(
+                        isPresented: $showFollowScopeAlert,
+                        onGrant: {
+                            authManager.requestFollowPermission { success in
+                                if success {
+                                    followOnStar = true
+                                    CustomAPIService.shared.updateFollowOnStarSetting(enabled: true) { _ in }
+                                }
+                            }
+                        },
+                        onCancel: {
+                            followOnStar = false
+                        }
+                    )
+                }
             }
         }
         .preferredColorScheme(themeManager.colorScheme)
@@ -356,6 +398,17 @@ struct SettingsView: View {
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.error)
                 }
+            }
+        }
+    }
+
+    private func handleFollowOnStarEnabled() {
+        authManager.checkHasFollowScope { hasScope in
+            if hasScope {
+                CustomAPIService.shared.updateFollowOnStarSetting(enabled: true) { _ in }
+            } else {
+                followOnStar = false
+                showFollowScopeAlert = true
             }
         }
     }
@@ -454,6 +507,94 @@ struct BrutalistDeleteAccountAlert: View {
 
                     Button(action: {
                         isPresented = false
+                    }) {
+                        Text("CANCEL")
+                            .fontWeight(.black)
+                            .textCase(.uppercase)
+                            .foregroundColor(Color.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(16)
+                            .background(Color.appBackgroundLight)
+                    }
+                }
+            }
+            .frame(width: 340)
+            .background(Color.appBackgroundLight)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.brutalistBorder, lineWidth: BrutalistStyle.borderThick)
+            )
+            .brutalistShadow(BrutalistStyle.Shadow.cardBlack)
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.2), value: isPresented)
+    }
+}
+
+// MARK: - Brutalist Follow Scope Alert
+
+struct BrutalistFollowScopeAlert: View {
+    @Binding var isPresented: Bool
+    let onGrant: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture { isPresented = false; onCancel() }
+
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundColor(Color.appAccent)
+
+                    Text("PERMISSION NEEDED")
+                        .font(.system(size: 24))
+                        .fontWeight(.black)
+                        .textCase(.uppercase)
+                        .foregroundColor(Color.textPrimary)
+                }
+                .padding(.top, 24)
+                .padding(.horizontal, 24)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    BulletPoint(text: "Follow on Star needs the GitHub follow permission")
+                    BulletPoint(text: "You'll be briefly redirected to GitHub")
+                    BulletPoint(text: "Only this one extra permission is requested")
+                    BulletPoint(text: "Your existing GitHub session stays intact")
+                }
+                .padding(.top, 24)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.brutalistBorder)
+                        .frame(height: BrutalistStyle.borderThick)
+                        .padding(.top, 24)
+
+                    Button(action: {
+                        isPresented = false
+                        onGrant()
+                    }) {
+                        Text("GRANT PERMISSION")
+                            .fontWeight(.black)
+                            .textCase(.uppercase)
+                            .foregroundColor(Color.appAccent)
+                            .frame(maxWidth: .infinity)
+                            .padding(16)
+                            .background(Color.appBackgroundLight)
+                    }
+
+                    Rectangle()
+                        .fill(Color.brutalistBorder)
+                        .frame(height: BrutalistStyle.borderThick)
+
+                    Button(action: {
+                        isPresented = false
+                        onCancel()
                     }) {
                         Text("CANCEL")
                             .fontWeight(.black)

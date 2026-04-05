@@ -1605,6 +1605,59 @@ class CustomAPIService: ObservableObject {
             DispatchQueue.main.async { completion(success) }
         }.resume()
     }
+
+    // MARK: - Follow on Star
+
+    func recordFollow(
+        followerUsername: String,
+        followedUsername: String,
+        repositoryGithubId: Int?,
+        completion: @escaping @Sendable (Bool) -> Void
+    ) {
+        guard let url = URL(string: "\(baseURL)follows/") else {
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        var body: [String: Any] = ["followed_github_username": followedUsername]
+        if let repoId = repositoryGithubId {
+            body["repository_github_id"] = repoId
+        }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            let success = (response as? HTTPURLResponse)?.statusCode == 201
+            DispatchQueue.main.async { completion(success) }
+        }.resume()
+    }
+
+    func updateFollowOnStarSetting(enabled: Bool, completion: @escaping @Sendable (Bool) -> Void) {
+        guard let url = URL(string: "\(baseURL)users/follow-on-star/") else {
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = apiToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["follow_on_star": enabled])
+
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            let success = (response as? HTTPURLResponse)?.statusCode == 200
+            DispatchQueue.main.async { completion(success) }
+        }.resume()
+    }
 }
 
 // MARK: - GitHub Search API Models

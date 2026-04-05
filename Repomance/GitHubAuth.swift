@@ -26,6 +26,9 @@ class GitHubAuthManager: ObservableObject {
     private let authURL = Config.githubAuthUrl
     private let tokenURL = Config.githubTokenUrl
 
+    // Callback invoked once after the next successful token exchange (used for incremental auth)
+    private var postAuthCompletion: ((Bool) -> Void)?
+
     init() {
         // Listen for token invalidation notifications
         NotificationCenter.default.addObserver(
@@ -153,8 +156,18 @@ class GitHubAuthManager: ObservableObject {
                 UserDefaults.standard.set(username, forKey: "github_username")
                 UserDefaults.standard.set(userId, forKey: "user_id")
 
+                // Sync follow_on_star setting from backend
+                if let followOnStar = json["follow_on_star"] as? Bool {
+                    UserDefaults.standard.set(followOnStar, forKey: "followOnStar")
+                }
+
                 // Still fetch GitHub user info for githubUserId
                 self.fetchUserInfo()
+
+                // Resolve any pending incremental auth completion
+                let completion = self.postAuthCompletion
+                self.postAuthCompletion = nil
+                completion?(true)
             }
         }.resume()
     }
@@ -316,6 +329,89 @@ class GitHubAuthManager: ObservableObject {
         }.resume()
     }
     
+    // MARK: - Follow on Star
+
+    /// Starts a new OAuth flow requesting the additional `user:follow` scope.
+    /// `completion` is called with `true` once the token exchange succeeds, `false` on cancellation.
+    func requestFollowPermission(completion: @escaping (Bool) -> Void) {
+        postAuthCompletion = completion
+
+        var components = URLComponents(string: authURL)!
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: clientId),
+            URLQueryItem(name: "redirect_uri", value: redirectURI),
+            URLQueryItem(name: "scope", value: "public_repo user:follow")
+        ]
+
+        guard let url = components.url else {
+            postAuthCompletion = nil
+            completion(false)
+            return
+        }
+
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "repomance"
+        ) { [weak self] callbackURL, error in
+            guard let self = self, error == nil, let callbackURL = callbackURL else {
+                DispatchQueue.main.async {
+                    self?.postAuthCompletion = nil
+                    completion(false)
+                }
+                return
+            }
+            self.handleCallback(url: callbackURL)
+        }
+
+        session.presentationContextProvider = AuthContextProvider.shared
+        session.prefersEphemeralWebBrowserSession = false
+        session.start()
+    }
+
+    /// Checks whether the current GitHub access token has the `user:follow` scope.
+    func checkHasFollowScope(completion: @escaping (Bool) -> Void) {
+        guard let token = accessToken else {
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: URL(string: "\(Config.githubApiBaseUrl)/user")!)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            let scopes = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OAuth-Scopes") ?? ""
+            let hasScope = scopes.split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .contains("user:follow")
+            DispatchQueue.main.async {
+                completion(hasScope)
+            }
+        }.resume()
+    }
+
+    /// Follows a GitHub user via `PUT /user/following/{username}`.
+    func followUser(username: String, completion: @escaping (Bool) -> Void) {
+        guard let token = accessToken else {
+            completion(false)
+            return
+        }
+
+        let url = URL(string: "\(Config.githubApiBaseUrl)/user/following/\(username)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("0", forHTTPHeaderField: "Content-Length")
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let success = (response as? HTTPURLResponse)?.statusCode == 204
+            DispatchQueue.main.async {
+                completion(success)
+            }
+        }.resume()
+    }
+
     // Helper class to provide presentation context for ASWebAuthenticationSession
     class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
         static let shared = AuthContextProvider()

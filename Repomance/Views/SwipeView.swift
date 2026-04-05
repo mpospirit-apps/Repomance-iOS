@@ -35,6 +35,7 @@ struct SwipeView: View {
     @State private var showNoConnection = false
     @AppStorage("rizzSoundEnabled") private var rizzSoundEnabled = false
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
+    @AppStorage("followOnStar") private var followOnStar = false
     @State private var remainingTime: String = "" // New state for remaining time
     @State private var toastMessage: String?
     @State private var showToast: Bool = false
@@ -159,6 +160,22 @@ struct SwipeView: View {
                                             interactionName: "Star"
                                         ) { success in
                                             // Interaction recorded
+                                        }
+                                    }
+
+                                    // Follow the repo owner if the setting is enabled
+                                    if self.followOnStar {
+                                        let ownerName = repository.ownerName
+                                        let repoGithubId = repository.id
+                                        authManager.followUser(username: ownerName) { followSuccess in
+                                            if followSuccess {
+                                                self.toastMessage = "Starred \(repository.name) · Followed \(ownerName)"
+                                                CustomAPIService.shared.recordFollow(
+                                                    followerUsername: authManager.username ?? "",
+                                                    followedUsername: ownerName,
+                                                    repositoryGithubId: repoGithubId
+                                                ) { _ in }
+                                            }
                                         }
                                     }
 
