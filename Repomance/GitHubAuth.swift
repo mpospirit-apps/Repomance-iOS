@@ -381,9 +381,10 @@ class GitHubAuthManager: ObservableObject {
 
         URLSession.shared.dataTask(with: request) { _, response, _ in
             let scopes = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OAuth-Scopes") ?? ""
-            let hasScope = scopes.split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .contains("user:follow")
+            let scopeList = scopes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            // Accept either the specific `user:follow` scope or the parent `user` scope
+            let hasScope = scopeList.contains("user:follow") || scopeList.contains("user")
+            print("🔍 [checkHasFollowScope] X-OAuth-Scopes: '\(scopes)' → hasScope=\(hasScope)")
             DispatchQueue.main.async {
                 completion(hasScope)
             }
@@ -393,11 +394,14 @@ class GitHubAuthManager: ObservableObject {
     /// Follows a GitHub user via `PUT /user/following/{username}`.
     func followUser(username: String, completion: @escaping (Bool) -> Void) {
         guard let token = accessToken else {
+            print("🔍 [followUser] accessToken is nil — aborting")
             completion(false)
             return
         }
 
-        let url = URL(string: "\(Config.githubApiBaseUrl)/user/following/\(username)")!
+        let urlString = "\(Config.githubApiBaseUrl)/user/following/\(username)"
+        print("🔍 [followUser] PUT \(urlString)")
+        let url = URL(string: urlString)!
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -405,9 +409,26 @@ class GitHubAuthManager: ObservableObject {
         request.setValue("0", forHTTPHeaderField: "Content-Length")
 
         URLSession.shared.dataTask(with: request) { _, response, error in
-            let success = (response as? HTTPURLResponse)?.statusCode == 204
-            DispatchQueue.main.async {
-                completion(success)
+            if let error = error {
+                print("🔍 [followUser] Network error: \(error.localizedDescription)")
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            print("🔍 [followUser] Status code: \(statusCode)")
+            switch statusCode {
+            case 204, 304:
+                // 204 = followed, 304 = already following — both count as success
+                DispatchQueue.main.async { completion(true) }
+            case 401, 403:
+                // Token lacks user:follow scope — notify so the UI can prompt re-auth
+                print("🔍 [followUser] Permission denied — posting FollowScopeRevoked")
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: NSNotification.Name("FollowScopeRevoked"), object: nil)
+                    completion(false)
+                }
+            default:
+                DispatchQueue.main.async { completion(false) }
             }
         }.resume()
     }

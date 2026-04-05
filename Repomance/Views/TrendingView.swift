@@ -35,6 +35,7 @@ struct TrendingView: View {
 
     @AppStorage("rizzSoundEnabled") private var rizzSoundEnabled = false
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
+    @AppStorage("followOnStar") private var followOnStar = false
 
     // Computed property to check if any filters are active
     private var hasActiveFilters: Bool {
@@ -158,6 +159,27 @@ struct TrendingView: View {
                                         }
 
                                         starred += 1
+
+                                        // Follow the repo owner if the setting is enabled
+                                        print("🔍 [FollowOnStar] followOnStar=\(self.followOnStar), accessToken=\(authManager.accessToken != nil ? "present" : "nil")")
+                                        if self.followOnStar {
+                                            let ownerName = repository.ownerName
+                                            let repoGithubId = repository.id
+                                            print("🔍 [FollowOnStar] Attempting to follow \(ownerName)")
+                                            authManager.followUser(username: ownerName) { followSuccess in
+                                                print("🔍 [FollowOnStar] followUser result: \(followSuccess)")
+                                                if followSuccess {
+                                                    self.toastMessage = "Starred \(repository.name) · Followed \(ownerName)"
+                                                    CustomAPIService.shared.recordFollow(
+                                                        followerUsername: authManager.username ?? "",
+                                                        followedUsername: ownerName,
+                                                        repositoryGithubId: repoGithubId
+                                                    ) { recordSuccess in
+                                                        print("🔍 [FollowOnStar] recordFollow result: \(recordSuccess)")
+                                                    }
+                                                }
+                                            }
+                                        }
 
                                         // Record Star interaction only if GitHub star succeeded
                                         if let username = authManager.username {

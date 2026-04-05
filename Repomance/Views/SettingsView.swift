@@ -337,32 +337,37 @@ struct SettingsView: View {
                     generator.impactOccurred()
                 }
             }
-            .overlay {
-                if showDeleteConfirmation {
-                    BrutalistDeleteAccountAlert(
-                        isPresented: $showDeleteConfirmation,
-                        onDelete: deleteAccount
-                    )
-                }
-                if showFollowScopeAlert {
-                    BrutalistFollowScopeAlert(
-                        isPresented: $showFollowScopeAlert,
-                        onGrant: {
-                            authManager.requestFollowPermission { success in
-                                if success {
-                                    followOnStar = true
-                                    CustomAPIService.shared.updateFollowOnStarSetting(enabled: true) { _ in }
-                                }
-                            }
-                        },
-                        onCancel: {
-                            followOnStar = false
-                        }
-                    )
-                }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FollowScopeRevoked"))) { _ in
+                followOnStar = false
+                CustomAPIService.shared.updateFollowOnStarSetting(enabled: false) { _ in }
+                showFollowScopeAlert = true
             }
         }
         .preferredColorScheme(themeManager.colorScheme)
+        .overlay {
+            if showDeleteConfirmation {
+                BrutalistDeleteAccountAlert(
+                    isPresented: $showDeleteConfirmation,
+                    onDelete: deleteAccount
+                )
+            }
+            if showFollowScopeAlert {
+                BrutalistFollowScopeAlert(
+                    isPresented: $showFollowScopeAlert,
+                    onGrant: {
+                        authManager.requestFollowPermission { success in
+                            if success {
+                                followOnStar = true
+                                CustomAPIService.shared.updateFollowOnStarSetting(enabled: true) { _ in }
+                            }
+                        }
+                    },
+                    onCancel: {
+                        followOnStar = false
+                    }
+                )
+            }
+        }
     }
 
     private func deleteAccount() {
