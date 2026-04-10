@@ -11,6 +11,9 @@ struct NotificationCountView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     let showToast: Bool
     let toastMessage: String?
+    let toastSubject: String?
+    let toastAccentSuffix: String?
+    let toastAccentSubject: String?
     let toastColor: Color
     let repoCache: RepoCache
     let dailyBatchCount: Int
@@ -40,10 +43,20 @@ struct NotificationCountView: View {
                 // Show notification - match count area height exactly with proper centering
                 HStack {
                     Spacer()
-                    Text(message)
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundColor(toastColor)
-                        .multilineTextAlignment(.center)
+                    (Text(message)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(toastColor)
+                            + Text(toastSubject != nil ? " \(toastSubject!)" : "")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundColor(toastColor)
+                            + Text(toastAccentSuffix != nil ? "\n" : "")
+                            + Text(toastAccentSuffix ?? "")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color.appAccent)
+                            + Text(toastAccentSubject != nil ? " \(toastAccentSubject!)" : "")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundColor(Color.appAccent))
+                            .multilineTextAlignment(.center)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)

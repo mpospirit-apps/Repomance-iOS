@@ -75,7 +75,7 @@ struct SettingsView: View {
                                     .frame(height: BrutalistStyle.borderThin)
 
                                 HStack {
-                                    Toggle("Follow on Star", isOn: $followOnStar)
+                                    Toggle("Follow repo owner on Star", isOn: $followOnStar)
                                         .toggleStyle(BrutalistToggleStyle(accentColor: Color.appAccent))
                                         .fontWeight(.bold)
                                         .foregroundColor(Color.textPrimary)
@@ -565,7 +565,7 @@ struct BrutalistFollowScopeAlert: View {
                 .padding(.horizontal, 24)
 
                 VStack(alignment: .leading, spacing: 12) {
-                    BulletPoint(text: "Follow on Star needs the GitHub follow permission")
+                    BulletPoint(text: "Follow repo owner on Star needs the GitHub follow permission")
                     BulletPoint(text: "You'll be briefly redirected to GitHub")
                     BulletPoint(text: "Only this one extra permission is requested")
                     BulletPoint(text: "Your existing GitHub session stays intact")

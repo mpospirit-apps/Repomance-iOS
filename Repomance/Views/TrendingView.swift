@@ -27,6 +27,9 @@ struct TrendingView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var toastMessage: String?
+    @State private var toastSubject: String?
+    @State private var toastAccentSuffix: String?
+    @State private var toastAccentSubject: String?
     @State private var showToast: Bool = false
     @State private var toastColor: Color = .clear
     @State private var shouldRefresh = false
@@ -93,11 +96,16 @@ struct TrendingView: View {
                                 }
 
                                 dismissed += 1
-                                self.toastMessage = "Passed \(repository.name)"
+                                self.toastMessage = "Passed"
+                                self.toastSubject = repository.name
+                                self.toastAccentSuffix = nil
+                                self.toastAccentSubject = nil
                                 self.toastColor = Color.passColor
                                 self.showToast = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                     self.showToast = false
+                                    self.toastAccentSuffix = nil
+                                    self.toastAccentSubject = nil
                                 }
 
                                 // Record Pass interaction
@@ -121,10 +129,15 @@ struct TrendingView: View {
                                             // Show warning toast to user and still move to next repo
                                             DispatchQueue.main.async {
                                                 self.toastMessage = "Warning: Interaction not saved"
+                                                self.toastSubject = nil
+                                                self.toastAccentSuffix = nil
+                                                self.toastAccentSubject = nil
                                                 self.toastColor = .orange
                                                 self.showToast = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                                     self.showToast = false
+                                                    self.toastAccentSuffix = nil
+                                                    self.toastAccentSubject = nil
                                                 }
                                                 // Still load next repo even if recording failed
                                                 self.loadNextRepository()
@@ -151,11 +164,16 @@ struct TrendingView: View {
                                             generator.notificationOccurred(.success)
                                         }
 
-                                        self.toastMessage = "Starred \(repository.name)"
+                                        self.toastMessage = "Starred"
+                                        self.toastSubject = repository.name
+                                        self.toastAccentSuffix = nil
+                                        self.toastAccentSubject = nil
                                         self.toastColor = Color.starColor
                                         self.showToast = true
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                             self.showToast = false
+                                            self.toastAccentSuffix = nil
+                                            self.toastAccentSubject = nil
                                         }
 
                                         starred += 1
@@ -169,7 +187,8 @@ struct TrendingView: View {
                                             authManager.followUser(username: ownerName) { followSuccess in
                                                 print("🔍 [FollowOnStar] followUser result: \(followSuccess)")
                                                 if followSuccess {
-                                                    self.toastMessage = "Starred \(repository.name) · Followed \(ownerName)"
+                                                    self.toastAccentSuffix = "Followed"
+                                                    self.toastAccentSubject = ownerName
                                                     CustomAPIService.shared.recordFollow(
                                                         followerUsername: authManager.username ?? "",
                                                         followedUsername: ownerName,
@@ -202,10 +221,15 @@ struct TrendingView: View {
                                                     // Show warning toast to user and still move to next repo
                                                     DispatchQueue.main.async {
                                                         self.toastMessage = "Starred, but interaction not saved"
+                                                        self.toastSubject = nil
+                                                        self.toastAccentSuffix = nil
+                                                        self.toastAccentSubject = nil
                                                         self.toastColor = .orange
                                                         self.showToast = true
                                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                                             self.showToast = false
+                                                            self.toastAccentSuffix = nil
+                                                            self.toastAccentSubject = nil
                                                         }
                                                         // Still load next repo even if recording failed
                                                         self.loadNextRepository()
@@ -220,10 +244,15 @@ struct TrendingView: View {
                                     } else {
                                         // Show error if star failed
                                         self.toastMessage = "Failed to star repository"
+                                        self.toastSubject = nil
+                                        self.toastAccentSuffix = nil
+                                        self.toastAccentSubject = nil
                                         self.toastColor = .red
                                         self.showToast = true
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                                             self.showToast = false
+                                            self.toastAccentSuffix = nil
+                                            self.toastAccentSubject = nil
                                         }
                                     }
                                 }
@@ -260,6 +289,9 @@ struct TrendingView: View {
                             selectedLanguage: trendingManager.filterLanguage,
                             showToast: showToast,
                             toastMessage: toastMessage,
+                            toastSubject: toastSubject,
+                            toastAccentSuffix: toastAccentSuffix,
+                            toastAccentSubject: toastAccentSubject,
                             toastColor: toastColor,
                             swipeProgress: swipeProgress
                         )
