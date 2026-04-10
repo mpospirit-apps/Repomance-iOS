@@ -75,7 +75,7 @@ struct SettingsView: View {
                                     .frame(height: BrutalistStyle.borderThin)
 
                                 HStack {
-                                    Toggle("Follow repo owner on Star", isOn: $followOnStar)
+                                    Toggle("Follow Repo Owner on Star", isOn: $followOnStar)
                                         .toggleStyle(BrutalistToggleStyle(accentColor: Color.appAccent))
                                         .fontWeight(.bold)
                                         .foregroundColor(Color.textPrimary)

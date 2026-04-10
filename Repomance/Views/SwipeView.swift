@@ -165,16 +165,7 @@ struct SwipeView: View {
                                         self.toastAccentSubject = nil
                                     }
 
-                                    // Record Star interaction in API only if GitHub star succeeded
-                                    if let username = authManager.username {
-                                        CustomAPIService.shared.recordInteraction(
-                                            username: username,
-                                            githubRepoId: repository.id,
-                                            interactionName: "Star"
-                                        ) { success in
-                                            // Interaction recorded
-                                        }
-                                    }
+                                    starred += 1
 
                                     // Follow the repo owner if the setting is enabled
                                     print("🔍 [FollowOnStar] followOnStar=\(self.followOnStar), accessToken=\(authManager.accessToken != nil ? "present" : "nil")")
@@ -198,8 +189,41 @@ struct SwipeView: View {
                                         }
                                     }
 
-                                    starred += 1
-                                    loadNextRepository()
+                                    // Record Star interaction only if GitHub star succeeded
+                                    if let username = authManager.username {
+                                        print("📝 [SwipeView] Recording Star interaction for repo \(repository.id)")
+                                        CustomAPIService.shared.recordInteraction(
+                                            username: username,
+                                            githubRepoId: repository.id,
+                                            interactionName: "Star"
+                                        ) { success in
+                                            if success {
+                                                print("✅ [SwipeView] Star interaction recorded successfully for repo \(repository.id)")
+                                                DispatchQueue.main.async {
+                                                    self.loadNextRepository()
+                                                }
+                                            } else {
+                                                print("⚠️ [SwipeView] Failed to record Star interaction for repo \(repository.id)")
+                                                DispatchQueue.main.async {
+                                                    self.toastMessage = "Starred, but interaction not saved"
+                                                    self.toastSubject = nil
+                                                    self.toastAccentSuffix = nil
+                                                    self.toastAccentSubject = nil
+                                                    self.toastColor = .orange
+                                                    self.showToast = true
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                        self.showToast = false
+                                                        self.toastAccentSuffix = nil
+                                                        self.toastAccentSubject = nil
+                                                    }
+                                                    self.loadNextRepository()
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        print("⚠️ [SwipeView] Cannot record Star interaction - username is nil")
+                                        loadNextRepository()
+                                    }
                                 } else {
                                     // Haptic feedback for failed star
                                     if hapticFeedbackEnabled {
